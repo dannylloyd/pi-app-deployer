@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,6 +14,11 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/robfig/cron/v3"
+)
+
+const (
+	defaultPollPeriodMin     = 5
+	defaultTestPollPeriodSec = 2
 )
 
 type AppInfo struct {
@@ -27,7 +33,7 @@ type Config struct {
 func main() {
 	repoName := flag.String("full-repo-name", "", "Name of the Github repo including the owner")
 	packageNames := flag.String("package-names", "Comma separated with no spaces list of package names to install", "Binary names")
-	pollPeriodMin := flag.Int64("poll-period-min", 5, "Number of minutes between polling for new version")
+	pollPeriodMin := flag.Int64("poll-period-min", defaultPollPeriodMin, "Number of minutes between polling for new version")
 	flag.Parse()
 
 	var args = map[string]string{
@@ -51,7 +57,7 @@ func main() {
 
 	var cronSpec string
 	if os.Getenv("TEST_MODE") != "" {
-		cronSpec = fmt.Sprintf("@every 2s")
+		cronSpec = fmt.Sprintf("@every %ds", defaultTestPollPeriodSec)
 	} else {
 		cronSpec = fmt.Sprintf("@every %dm", pollPeriodMin)
 	}
@@ -84,25 +90,45 @@ func updateApp(config Config) error {
 }
 
 func installApp(config Config, latestVersion string) error {
+	fmt.Println("App install called", config.RepoName)
 	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName))
 	if err != nil {
 		return fmt.Errorf("requesting latest release: %s", err)
 	}
+	fmt.Println("*")
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
-
+	fmt.Println("**")
 	var release github.RepositoryRelease
 	err = json.Unmarshal(body, &release)
-
+	fmt.Println("***")
+	if err != nil {
+		return fmt.Errorf("unmarshalling json: %s", err)
+	}
+	fmt.Println("checking packages", config.PackageNames)
+	found := true
 	for _, bName := range config.PackageNames {
+		fmt.Println("bName", bName)
 		for _, a := range release.Assets {
+			fmt.Println("a.Name", *a.Name)
 			expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", bName, latestVersion)
+			fmt.Println("expectedName", expectedName)
 			if expectedName == *a.Name {
-				installRelease(*a.BrowserDownloadURL)
+				fmt.Println(fmt.Sprintf("Installing release %s", *a.Name))
+				err := installRelease(*a.Name, *a.BrowserDownloadURL)
+				if err != nil {
+					fmt.Println("wtf", err)
+					return err
+				}
+				fmt.Println("((((((((((((((((((((((((((((((")
+				os.Exit(0)
 			}
 		}
+	}
+	if !found {
+		fmt.Println("No packages matched")
 	}
 
 	// out, err := exec.Command(installScript, repoName, string(latestVersion)).Output()
@@ -117,8 +143,39 @@ func installApp(config Config, latestVersion string) error {
 	return nil
 }
 
-func installRelease(url string) {
-	fmt.Println(url)
+func installRelease(name string, url string) error {
+	fmt.Println("Release url:", url)
+
+	// Create the file
+	out, err := os.Create(name)
+	if err != nil {
+		fmt.Println("creating file", err)
+		return err
+	}
+	defer out.Close()
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("getting url", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("status code", err)
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		fmt.Println("copying", err)
+		return err
+	}
+
+	return nil
 }
 
 func checkForUpdates(config Config) error {
@@ -138,7 +195,7 @@ func checkForUpdates(config Config) error {
 			log.Println(fmt.Sprintf("Error reading current version from file: %s. Installing app now", err))
 			err := installApp(config, string(latestVersion))
 			if err != nil {
-				return fmt.Errorf("installing app: %s", err)
+				return fmt.Errorf("error installing app: %s", err)
 			}
 			log.Println("Successfully installed app")
 		} else {
