@@ -8,10 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/google/go-github/github"
 	"github.com/robfig/cron/v3"
 )
 
@@ -19,23 +19,34 @@ type AppInfo struct {
 	TagName string `json:"tag_name"`
 }
 
-func main() {
+type Config struct {
+	RepoName     string
+	PackageNames []string
+}
 
-	fullRepoName := flag.String("full-repo-name", "", "Name of the Github repo including the owner")
-	updateScript := flag.String("update-script", "", "Absolute path of the script or executable that is responsible for running the update actions ")
-	installScript := flag.String("install-script", "", "Absolute path of the script or executable that is responsible for running the installing actions")
+func main() {
+	repoName := flag.String("full-repo-name", "", "Name of the Github repo including the owner")
+	packageNames := flag.String("package-names", "Comma separated with no spaces list of package names to install", "Binary names")
 	pollPeriodMin := flag.Int64("poll-period-min", 5, "Number of minutes between polling for new version")
 	flag.Parse()
 
 	var args = map[string]string{
-		"full-repo-name": *fullRepoName,
-		"update-script":  *updateScript,
-		"install-script": *installScript,
+		"full-repo-name": *repoName,
+		"binary-names":   *packageNames,
 	}
 	for k, v := range args {
 		if v == "" {
 			log.Fatalln(fmt.Sprintf("--%s is required", k))
 		}
+	}
+
+	config := Config{
+		RepoName:     *repoName,
+		PackageNames: []string{},
+	}
+
+	for _, v := range strings.Split(*packageNames, ",") {
+		config.PackageNames = append(config.PackageNames, v)
 	}
 
 	var cronSpec string
@@ -48,7 +59,7 @@ func main() {
 	var cronLib *cron.Cron
 	cronLib = cron.New()
 	cronLib.AddFunc(cronSpec, func() {
-		err := checkForUpdates(*fullRepoName, *updateScript, *installScript)
+		err := checkForUpdates(config)
 		if err != nil {
 			log.Println("Error checking for updates:", err)
 		}
@@ -59,35 +70,60 @@ func main() {
 	select {} // block forever
 }
 
-func updateApp(fullRepoName string, updateScript string, latestVersion string) error {
-	out, err := exec.Command(updateScript, fullRepoName, string(latestVersion)).Output()
-	if err != nil {
-		return fmt.Errorf("initiating update command: %s", err)
-	}
-	err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
-	if err != nil {
-		return fmt.Errorf("writing latest version to file: %s", err)
-	}
-	log.Println(string(out))
-	return nil
-}
-
-func installApp(fullRepoName string, installScript string, latestVersion string) error {
-	out, err := exec.Command(installScript, fullRepoName, string(latestVersion)).Output()
-	if err != nil {
-		return fmt.Errorf("initiating install command with latest version: %s", err)
-	}
+func updateApp(config Config) error {
+	// out, err := exec.Command(updateScript, repoName, string(latestVersion)).Output()
+	// if err != nil {
+	// 	return fmt.Errorf("initiating update command: %s", err)
+	// }
 	// err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
 	// if err != nil {
 	// 	return fmt.Errorf("writing latest version to file: %s", err)
 	// }
-	log.Println(string(out))
+	// log.Println(string(out))
 	return nil
 }
 
-func checkForUpdates(fullRepoName string, updateScript string, installScript string) error {
+func installApp(config Config, latestVersion string) error {
+	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName))
+	if err != nil {
+		return fmt.Errorf("requesting latest release: %s", err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var release github.RepositoryRelease
+	err = json.Unmarshal(body, &release)
+
+	for _, bName := range config.PackageNames {
+		for _, a := range release.Assets {
+			expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", bName, latestVersion)
+			if expectedName == *a.Name {
+				installRelease(*a.BrowserDownloadURL)
+			}
+		}
+	}
+
+	// out, err := exec.Command(installScript, repoName, string(latestVersion)).Output()
+	// if err != nil {
+	// 	return fmt.Errorf("initiating install command with latest version: %s", err)
+	// }
+	// err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
+	// if err != nil {
+	// 	return fmt.Errorf("writing latest version to file: %s", err)
+	// }
+	// log.Println(string(out))
+	return nil
+}
+
+func installRelease(url string) {
+	fmt.Println(url)
+}
+
+func checkForUpdates(config Config) error {
 	log.Println("Checking for updates")
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", fullRepoName))
+	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName))
 	if err != nil {
 		return err
 	}
@@ -99,8 +135,8 @@ func checkForUpdates(fullRepoName string, updateScript string, installScript str
 		latestVersion := []byte(info.TagName)
 		version, err := ioutil.ReadFile("./.version")
 		if err != nil {
-			log.Println(fmt.Sprintf("Error reading current version from file: %s. Installing app now using install script %s", err, installScript))
-			err := installApp(fullRepoName, installScript, string(latestVersion))
+			log.Println(fmt.Sprintf("Error reading current version from file: %s. Installing app now", err))
+			err := installApp(config, string(latestVersion))
 			if err != nil {
 				return fmt.Errorf("installing app: %s", err)
 			}
@@ -109,7 +145,7 @@ func checkForUpdates(fullRepoName string, updateScript string, installScript str
 			v := strings.TrimSuffix(string(version), "\n")
 			if info.TagName != v {
 				log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", v, string(latestVersion)))
-				err := updateApp(fullRepoName, updateScript, string(latestVersion))
+				err := updateApp(config)
 				if err != nil {
 					return fmt.Errorf("updating app: %s", err)
 				}
