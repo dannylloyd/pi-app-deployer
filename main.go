@@ -176,7 +176,14 @@ func installRelease(packageName string, releaseName string, url string) error {
 
 func checkForUpdates(config Config) error {
 	log.Println("Checking for updates")
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName))
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("token %s", os.Getenv("GITHUB_TOKEN")))
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -184,30 +191,35 @@ func checkForUpdates(config Config) error {
 	err = json.NewDecoder(resp.Body).Decode(&info)
 	if err != nil {
 		return fmt.Errorf("parsing version from api response: %s", err)
-	} else {
-		latestVersion := []byte(info.TagName)
-		version, err := ioutil.ReadFile("./.version")
+	}
+	if info.TagName == "" {
+		return fmt.Errorf("empty tag name from api response: %s", info)
+	}
+	latestVersion := []byte(info.TagName)
+	version, err := ioutil.ReadFile("./.version")
+	if err != nil {
+		log.Println(fmt.Sprintf("Error reading current version from file: %s. Installing app now", err))
+		err := installApp(config, string(latestVersion))
 		if err != nil {
-			log.Println(fmt.Sprintf("Error reading current version from file: %s. Installing app now", err))
-			err := installApp(config, string(latestVersion))
-			if err != nil {
-				return fmt.Errorf("error installing app: %s", err)
-			}
-			log.Println("Successfully installed app")
-		} else {
-			v := strings.TrimSuffix(string(version), "\n")
-			if info.TagName != v {
-				log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", v, string(latestVersion)))
-				err := updateApp(config)
-				if err != nil {
-					return fmt.Errorf("updating app: %s", err)
-				}
-				log.Println("Successfully updated app")
-			} else {
-				log.Println("App already up to date")
-			}
+			return fmt.Errorf("error installing app: %s", err)
 		}
-
+		log.Println("Successfully installed app")
+		err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
+		if err != nil {
+			return fmt.Errorf("writing latest version to file: %s", err)
+		}
+	} else {
+		v := strings.TrimSuffix(string(version), "\n")
+		if info.TagName != v {
+			log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", v, string(latestVersion)))
+			err := updateApp(config)
+			if err != nil {
+				return fmt.Errorf("updating app: %s", err)
+			}
+			log.Println("Successfully updated app")
+		} else {
+			log.Println("App already up to date")
+		}
 	}
 	return nil
 }
