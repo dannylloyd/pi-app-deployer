@@ -1,14 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 
 const (
 	defaultPollPeriodMin     = 5
-	defaultTestPollPeriodSec = 2
+	defaultTestPollPeriodSec = 5
 )
 
 type AppInfo struct {
@@ -90,45 +91,37 @@ func updateApp(config Config) error {
 }
 
 func installApp(config Config, latestVersion string) error {
-	fmt.Println("App install called", config.RepoName)
 	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName))
 	if err != nil {
 		return fmt.Errorf("requesting latest release: %s", err)
 	}
-	fmt.Println("*")
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println("**")
+
 	var release github.RepositoryRelease
 	err = json.Unmarshal(body, &release)
-	fmt.Println("***")
+
 	if err != nil {
 		return fmt.Errorf("unmarshalling json: %s", err)
 	}
-	fmt.Println("checking packages", config.PackageNames)
 	found := true
-	for _, bName := range config.PackageNames {
-		fmt.Println("bName", bName)
+	for _, pName := range config.PackageNames {
 		for _, a := range release.Assets {
-			fmt.Println("a.Name", *a.Name)
-			expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", bName, latestVersion)
-			fmt.Println("expectedName", expectedName)
+			expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", pName, latestVersion)
 			if expectedName == *a.Name {
-				fmt.Println(fmt.Sprintf("Installing release %s", *a.Name))
-				err := installRelease(*a.Name, *a.BrowserDownloadURL)
+				log.Println(fmt.Sprintf("Installing release %s", *a.Name))
+				err := installRelease(pName, *a.Name, *a.BrowserDownloadURL)
 				if err != nil {
-					fmt.Println("wtf", err)
 					return err
 				}
-				fmt.Println("((((((((((((((((((((((((((((((")
-				os.Exit(0)
 			}
 		}
 	}
 	if !found {
-		fmt.Println("No packages matched")
+		log.Println("No packages matched")
 	}
 
 	// out, err := exec.Command(installScript, repoName, string(latestVersion)).Output()
@@ -143,37 +136,40 @@ func installApp(config Config, latestVersion string) error {
 	return nil
 }
 
-func installRelease(name string, url string) error {
-	fmt.Println("Release url:", url)
-
-	// Create the file
-	out, err := os.Create(name)
+func installRelease(packageName string, releaseName string, url string) error {
+	syncDir := fmt.Sprintf("/tmp/%s", packageName)
+	err := os.RemoveAll(syncDir)
 	if err != nil {
-		fmt.Println("creating file", err)
-		return err
+		return fmt.Errorf("removing download directory: %s", err)
 	}
-	defer out.Close()
-
-	// Get the data
-	resp, err := http.Get(url)
+	err = os.Mkdir(syncDir, 0755)
 	if err != nil {
-		fmt.Println("getting url", err)
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check server response
-	if resp.StatusCode != http.StatusOK {
-		fmt.Println("status code", err)
-		return fmt.Errorf("bad status: %s", resp.Status)
+		return fmt.Errorf("creating download directory: %s", err)
 	}
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	var curlOut bytes.Buffer
+	var tarOut bytes.Buffer
+	curl := exec.Command("curl", "-sL", url)
+	tar := exec.Command("tar", "xz", "-C", syncDir)
+	tar.Stdout = &tarOut
+	tar.Stdin, err = curl.StdoutPipe()
 	if err != nil {
-		fmt.Println("copying", err)
-		return err
+		return fmt.Errorf("creating curl stdout pipe: %s", err)
 	}
+	err = tar.Start()
+	if err != nil {
+		return fmt.Errorf("starting tar command: %s", err)
+	}
+	err = curl.Run()
+	if err != nil {
+		return fmt.Errorf("running curl command: %s", err)
+	}
+	err = tar.Wait()
+	if err != nil {
+		return fmt.Errorf("waiting on tar command: %s", err)
+	}
+
+	fmt.Println(curlOut.String())
 
 	return nil
 }
@@ -206,7 +202,7 @@ func checkForUpdates(config Config) error {
 				if err != nil {
 					return fmt.Errorf("updating app: %s", err)
 				}
-				log.Println("Successfully installed app")
+				log.Println("Successfully updated app")
 			} else {
 				log.Println("App already up to date")
 			}
