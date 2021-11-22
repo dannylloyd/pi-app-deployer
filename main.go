@@ -32,15 +32,15 @@ type Config struct {
 }
 
 func main() {
-	repoName := flag.String("full-repo-name", "", "Name of the Github repo including the owner")
+	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
 	packageNames := flag.String("package-names", "", "Comma separated with no spaces list of package names to install")
 	pollPeriodMin := flag.Int64("poll-period-min", defaultPollPeriodMin, "Number of minutes between polling for new version")
 	install := flag.Bool("install", false, "First time install of the application. Will not trigger checking for updates")
 	flag.Parse()
 
 	var stringArgs = map[string]string{
-		"full-repo-name": *repoName,
-		"binary-names":   *packageNames,
+		"repo-name":    *repoName,
+		"binary-names": *packageNames,
 	}
 	for k, v := range stringArgs {
 		if v == "" {
@@ -150,16 +150,6 @@ func installApp(config Config, latestVersion string) error {
 	if !found {
 		return fmt.Errorf("no packages found")
 	}
-
-	// out, err := exec.Command(installScript, repoName, string(latestVersion)).Output()
-	// if err != nil {
-	// 	return fmt.Errorf("initiating install command with latest version: %s", err)
-	// }
-	// err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
-	// if err != nil {
-	// 	return fmt.Errorf("writing latest version to file: %s", err)
-	// }
-	// log.Println(string(out))
 	return nil
 }
 
