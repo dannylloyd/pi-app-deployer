@@ -33,15 +33,16 @@ type Config struct {
 
 func main() {
 	repoName := flag.String("full-repo-name", "", "Name of the Github repo including the owner")
-	packageNames := flag.String("package-names", "Comma separated with no spaces list of package names to install", "Binary names")
+	packageNames := flag.String("package-names", "", "Comma separated with no spaces list of package names to install")
 	pollPeriodMin := flag.Int64("poll-period-min", defaultPollPeriodMin, "Number of minutes between polling for new version")
+	install := flag.Bool("install", false, "First time install of the application. Will not trigger checking for updates")
 	flag.Parse()
 
-	var args = map[string]string{
+	var stringArgs = map[string]string{
 		"full-repo-name": *repoName,
 		"binary-names":   *packageNames,
 	}
-	for k, v := range args {
+	for k, v := range stringArgs {
 		if v == "" {
 			log.Fatalln(fmt.Sprintf("--%s is required", k))
 		}
@@ -56,25 +57,51 @@ func main() {
 		config.PackageNames = append(config.PackageNames, v)
 	}
 
-	var cronSpec string
-	if os.Getenv("TEST_MODE") != "" {
-		cronSpec = fmt.Sprintf("@every %ds", defaultTestPollPeriodSec)
-	} else {
-		cronSpec = fmt.Sprintf("@every %dm", pollPeriodMin)
-	}
-
-	var cronLib *cron.Cron
-	cronLib = cron.New()
-	cronLib.AddFunc(cronSpec, func() {
-		err := checkForUpdates(config)
-		if err != nil {
-			log.Println("Error checking for updates:", err)
+	if *install {
+		currentVersion, err := getCurrentVersion()
+		if err == nil && currentVersion != "" {
+			log.Println(fmt.Errorf("App already installed at version %s, remove '--install' flag to check for updates", currentVersion))
+			os.Exit(0)
 		}
-	})
-	cronLib.Start()
+		if err != nil && "reading current version from file: open ./.version: no such file or directory" != err.Error() {
+			log.Println(fmt.Errorf("getting current version: %s", err))
+			os.Exit(1)
+		}
 
-	go forever()
-	select {} // block forever
+		latestVersion, err := getLatestVersion(config)
+		log.Println(fmt.Sprintf("Error reading current version from file: %s. Installing app now", err))
+		err = installApp(config, latestVersion)
+		if err != nil {
+			log.Println(fmt.Errorf("error installing app: %s", err))
+			os.Exit(1)
+		}
+		log.Println("Successfully installed app")
+		err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
+		if err != nil {
+			log.Println(fmt.Errorf("writing latest version to file: %s", err))
+			os.Exit(1)
+		}
+	} else {
+		var cronSpec string
+		if os.Getenv("TEST_MODE") != "" {
+			cronSpec = fmt.Sprintf("@every %ds", defaultTestPollPeriodSec)
+		} else {
+			cronSpec = fmt.Sprintf("@every %dm", pollPeriodMin)
+		}
+
+		var cronLib *cron.Cron
+		cronLib = cron.New()
+		cronLib.AddFunc(cronSpec, func() {
+			err := checkForUpdates(config)
+			if err != nil {
+				log.Println("Error checking for updates:", err)
+			}
+		})
+		cronLib.Start()
+
+		go forever()
+		select {} // block forever
+	}
 }
 
 func updateApp(config Config) error {
@@ -121,7 +148,7 @@ func installApp(config Config, latestVersion string) error {
 		}
 	}
 	if !found {
-		log.Println("No packages matched")
+		return fmt.Errorf("no packages found")
 	}
 
 	// out, err := exec.Command(installScript, repoName, string(latestVersion)).Output()
@@ -174,53 +201,58 @@ func installRelease(packageName string, releaseName string, url string) error {
 	return nil
 }
 
-func checkForUpdates(config Config) error {
-	log.Println("Checking for updates")
-
+func getLatestVersion(config Config) (string, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName), nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("token %s", os.Getenv("GITHUB_TOKEN")))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	var info AppInfo
 	err = json.NewDecoder(resp.Body).Decode(&info)
 	if err != nil {
-		return fmt.Errorf("parsing version from api response: %s", err)
+		return "", fmt.Errorf("parsing version from api response: %s", err)
 	}
 	if info.TagName == "" {
-		return fmt.Errorf("empty tag name from api response: %s", info)
+		return "", fmt.Errorf("empty tag name from api response: %s", info)
 	}
 	latestVersion := []byte(info.TagName)
-	version, err := ioutil.ReadFile("./.version")
+	return string(latestVersion), nil
+}
+
+func getCurrentVersion() (string, error) {
+	currentVersionBytes, err := ioutil.ReadFile("./.version")
 	if err != nil {
-		log.Println(fmt.Sprintf("Error reading current version from file: %s. Installing app now", err))
-		err := installApp(config, string(latestVersion))
-		if err != nil {
-			return fmt.Errorf("error installing app: %s", err)
-		}
-		log.Println("Successfully installed app")
-		err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
-		if err != nil {
-			return fmt.Errorf("writing latest version to file: %s", err)
-		}
-	} else {
-		v := strings.TrimSuffix(string(version), "\n")
-		if info.TagName != v {
-			log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", v, string(latestVersion)))
-			err := updateApp(config)
-			if err != nil {
-				return fmt.Errorf("updating app: %s", err)
-			}
-			log.Println("Successfully updated app")
-		} else {
-			log.Println("App already up to date")
-		}
+		return "", fmt.Errorf("reading current version from file: %s", err)
 	}
+	return strings.TrimSuffix(string(currentVersionBytes), "\n"), nil
+}
+
+func checkForUpdates(config Config) error {
+	log.Println("Checking for updates")
+	latestVersion, err := getLatestVersion(config)
+	if err != nil {
+		return fmt.Errorf("getting latest version: %s", err)
+	}
+	currentVersion, err := getCurrentVersion()
+	if err != nil {
+		return fmt.Errorf("getting current version: %s", err)
+	}
+	if latestVersion != currentVersion {
+		log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", currentVersion, string(latestVersion)))
+		err := updateApp(config)
+		if err != nil {
+			return fmt.Errorf("updating app: %s", err)
+		}
+		log.Println("Successfully updated app")
+	} else {
+		log.Println("App already up to date")
+	}
+
 	return nil
 }
 
