@@ -286,6 +286,16 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return err
 	}
 
+	_, err = exec.Command("systemctl", "daemon-reload").Output()
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.Command("systemctl", "start", serviceFile).Output()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -342,6 +352,7 @@ func getLatestVersion(config Config) (string, error) {
 }
 
 func getCurrentVersion() (string, error) {
+	// TODO use unique name of .version file, like .pi-test.version
 	currentVersionBytes, err := ioutil.ReadFile("./.version")
 	if err != nil {
 		return "", fmt.Errorf("reading current version from file: %s", err)

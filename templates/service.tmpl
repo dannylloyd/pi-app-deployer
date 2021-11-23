@@ -8,7 +8,7 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 [Service]
-ExecStart=/home/pi/run.sh
+ExecStart=/home/pi/run-<<.Name>>.sh
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
 StandardError=inherit
