@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"flag"
@@ -11,7 +12,10 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"text/template"
 	"time"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/google/go-github/github"
 	"github.com/robfig/cron/v3"
@@ -24,6 +28,11 @@ const (
 
 type AppInfo struct {
 	TagName string `json:"tag_name"`
+}
+
+type Manifest struct {
+	Name string   `yaml:"name"`
+	Env  []string `yaml:"env"`
 }
 
 type Config struct {
@@ -69,7 +78,10 @@ func main() {
 		}
 
 		latestVersion, err := getLatestVersion(config)
-		log.Println(fmt.Sprintf("Error reading current version from file: %s. Installing app now", err))
+		if err != nil {
+			log.Println(fmt.Sprintf("error getting latest version: %s", err))
+			os.Exit(1)
+		}
 		err = installApp(config, latestVersion)
 		if err != nil {
 			log.Println(fmt.Errorf("error installing app: %s", err))
@@ -102,6 +114,19 @@ func main() {
 		go forever()
 		select {} // block forever
 	}
+}
+
+func getManifest() (Manifest, error) {
+	var m Manifest
+	yamlFile, err := ioutil.ReadFile("./.pi-app-updater.yaml")
+	if err != nil {
+		return m, fmt.Errorf("reading manifest yaml file: %s ", err)
+	}
+	err = yaml.Unmarshal(yamlFile, &m)
+	if err != nil {
+		return m, fmt.Errorf("unmarshalling manifest yaml file: %s ", err)
+	}
+	return m, nil
 }
 
 func updateApp(config Config) error {
@@ -164,7 +189,6 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return fmt.Errorf("creating download directory: %s", err)
 	}
 
-	var curlOut bytes.Buffer
 	var tarOut bytes.Buffer
 	curl := exec.Command("curl", "-sL", url)
 	tar := exec.Command("tar", "xz", "-C", syncDir)
@@ -186,7 +210,42 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return fmt.Errorf("waiting on tar command: %s", err)
 	}
 
-	fmt.Println(curlOut.String())
+	m, err := getManifest()
+	if err != nil {
+		return fmt.Errorf("getting manifest: %s", err)
+	}
+
+	type srvData struct {
+		Description string
+		Keys        []string
+		Map         map[string]string
+		NewLine     string
+	}
+
+	s := srvData{
+		Description: m.Name,
+		Keys:        make([]string, 0),
+		Map:         make(map[string]string, 0),
+		NewLine:     "\n",
+	}
+
+	for _, v := range m.Env {
+		s.Keys = append(s.Keys, v)
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print(fmt.Sprintf("Enter value for %s: ", v))
+		text, _ := reader.ReadString('\n')
+		s.Map[v] = strings.TrimSuffix(string(text), "\n")
+	}
+
+	t, err := template.ParseFiles("templates/service.tmpl")
+	if err != nil {
+		return fmt.Errorf("parsing service template file: %s", err)
+	}
+	// todo write to file
+	err = t.Execute(os.Stdout, s)
+	if err != nil {
+		return fmt.Errorf("executing template: %s", err)
+	}
 
 	return nil
 }

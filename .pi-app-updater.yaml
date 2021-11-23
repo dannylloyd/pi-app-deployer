@@ -1,0 +1,4 @@
+name: pi-sensor
+env:
+  - HEROKU_API_KEY
+  - SENSOR_SOURCE
