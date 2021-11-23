@@ -245,10 +245,15 @@ func installRelease(packageName string, releaseName string, url string) error {
 	if err != nil {
 		return fmt.Errorf("evaluating template %s: %s", serviceTemplatePath, err)
 	}
-
-	err = evalTemplate(runTemplatePath, fmt.Sprintf("%s/run-%s.sh", syncDir, m.Name), s)
+	runScript := fmt.Sprintf("%s/run-%s.sh", syncDir, m.Name)
+	err = evalTemplate(runTemplatePath, runScript, s)
 	if err != nil {
 		return fmt.Errorf("evaluating template %s: %s", runTemplatePath, err)
+	}
+
+	_, err = exec.Command("chmod", "+x", runScript).Output()
+	if err != nil {
+		return fmt.Errorf("changing file mode for %s: %s", runScript, err)
 	}
 
 	return nil
