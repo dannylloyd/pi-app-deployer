@@ -1,0 +1,11 @@
+#!/bin/bash<<.NewLine>>
+
+<<$newline:=.NewLine>>
+
+<<- range $key := .Keys ->>
+if [[ -z ${<< $key >>} ]]; then
+  echo "<< $key >> env var not set, exiting now"
+  exit 1
+fi<<$newline>>
+<< end >>
+/home/pi/<<.Name>>

@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
-	"text/template"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -24,6 +24,8 @@ import (
 const (
 	defaultPollPeriodMin     = 5
 	defaultTestPollPeriodSec = 5
+	serviceTemplatePath      = "templates/service.tmpl"
+	runTemplatePath          = "templates/run.tmpl"
 )
 
 type AppInfo struct {
@@ -216,6 +218,7 @@ func installRelease(packageName string, releaseName string, url string) error {
 	}
 
 	type srvData struct {
+		Name        string
 		Description string
 		Keys        []string
 		Map         map[string]string
@@ -223,6 +226,7 @@ func installRelease(packageName string, releaseName string, url string) error {
 	}
 
 	s := srvData{
+		Name:        m.Name,
 		Description: m.Name,
 		Keys:        make([]string, 0),
 		Map:         make(map[string]string, 0),
@@ -237,19 +241,37 @@ func installRelease(packageName string, releaseName string, url string) error {
 		s.Map[v] = strings.TrimSuffix(string(text), "\n")
 	}
 
-	t, err := template.ParseFiles("templates/service.tmpl")
+	err = evalTemplate(serviceTemplatePath, fmt.Sprintf("%s/%s.service", syncDir, m.Name), s)
 	if err != nil {
-		return fmt.Errorf("parsing service template file: %s", err)
+		return fmt.Errorf("evaluating template %s: %s", serviceTemplatePath, err)
 	}
-	fi, err := os.Create(fmt.Sprintf("%s/%s.service", syncDir, m.Name))
+
+	err = evalTemplate(runTemplatePath, fmt.Sprintf("%s/run-%s.sh", syncDir, m.Name), s)
+	if err != nil {
+		return fmt.Errorf("evaluating template %s: %s", runTemplatePath, err)
+	}
+
+	return nil
+}
+
+func evalTemplate(templateName string, outputPath string, i interface{}) error {
+	f, err := ioutil.ReadFile(templateName)
+	if err != nil {
+		return fmt.Errorf("opening template file: %s", err)
+	}
+	t, err := template.New(templateName).Delims("<<", ">>").Parse(string(f))
 	if err != nil {
 		return fmt.Errorf("opening service file: %s", err)
 	}
-	err = t.Execute(fi, s)
+
+	fi, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("opening service file: %s", err)
+	}
+	err = t.Execute(fi, i)
 	if err != nil {
 		return fmt.Errorf("executing template: %s", err)
 	}
-
 	return nil
 }
 

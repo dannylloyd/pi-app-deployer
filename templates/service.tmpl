@@ -1,5 +1,5 @@
 [Unit]
-Description={{.Description}}
+Description=<<.Description>>
 After=network.target
 StartLimitInterval=300
 StartLimitBurst=10
@@ -14,9 +14,9 @@ StandardOutput=inherit
 StandardError=inherit
 Restart=always
 RestartSec=30
-User=pi{{.NewLine}}
+User=pi<<.NewLine>>
 
-{{- $values := .Map -}}
-{{- range $key := .Keys -}}
-Environment={{ $key }}={{ index $values $key }}
-{{ end }}
+<<- $values := .Map ->>
+<<- range $key := .Keys ->>
+Environment=<< $key >>=<< index $values $key >>
+<< end >>
