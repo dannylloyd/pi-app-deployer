@@ -271,16 +271,33 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return fmt.Errorf("changing file mode for %s: %s", runScriptOutputPath, err)
 	}
 
-	err = os.Rename(serviceFileOutputPath, fmt.Sprintf("%s/%s", systemDPath, serviceFile))
+	err = moveWithOwnership(serviceFileOutputPath, fmt.Sprintf("%s/%s", systemDPath, serviceFile))
 	if err != nil {
-		return fmt.Errorf("moving service file to systemd path: %s", err)
+		return err
 	}
 
-	err = os.Rename(runScriptOutputPath, fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile))
+	err = moveWithOwnership(runScriptOutputPath, fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile))
 	if err != nil {
-		return fmt.Errorf("moving run script to home dir: %s", err)
+		return err
 	}
 
+	err = moveWithOwnership(fmt.Sprintf("%s/%s", syncDir, s.Name), fmt.Sprintf("%s/%s", piUserHomeDir, s.Name))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func moveWithOwnership(src, dest string) error {
+	err := os.Rename(src, dest)
+	if err != nil {
+		return err
+	}
+	_, err = exec.Command("chown", "pi:pi", dest).Output()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
