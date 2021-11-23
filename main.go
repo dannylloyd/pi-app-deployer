@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -24,9 +25,17 @@ import (
 const (
 	defaultPollPeriodMin     = 5
 	defaultTestPollPeriodSec = 5
-	serviceTemplatePath      = "templates/service.tmpl"
-	runTemplatePath          = "templates/run.tmpl"
+	systemDPath              = "/etc/systemd/system"
+	piUserHomeDir            = "/home/pi"
 )
+
+//go:embed templates/run.tmpl
+var runScriptTemplate string
+
+//go:embed templates/service.tmpl
+var serviceTemplate string
+
+var testMode string
 
 type AppInfo struct {
 	TagName string `json:"tag_name"`
@@ -48,6 +57,8 @@ func main() {
 	pollPeriodMin := flag.Int64("poll-period-min", defaultPollPeriodMin, "Number of minutes between polling for new version")
 	install := flag.Bool("install", false, "First time install of the application. Will not trigger checking for updates")
 	flag.Parse()
+
+	testMode = os.Getenv("TEST_MODE")
 
 	var stringArgs = map[string]string{
 		"repo-name":    *repoName,
@@ -97,7 +108,7 @@ func main() {
 		}
 	} else {
 		var cronSpec string
-		if os.Getenv("TEST_MODE") != "" {
+		if testMode != "" {
 			cronSpec = fmt.Sprintf("@every %ds", defaultTestPollPeriodSec)
 		} else {
 			cronSpec = fmt.Sprintf("@every %dm", pollPeriodMin)
@@ -241,30 +252,40 @@ func installRelease(packageName string, releaseName string, url string) error {
 		s.Map[v] = strings.TrimSuffix(string(text), "\n")
 	}
 
-	err = evalTemplate(serviceTemplatePath, fmt.Sprintf("%s/%s.service", syncDir, m.Name), s)
+	serviceFile := fmt.Sprintf("%s.service", m.Name)
+	serviceFileOutputPath := fmt.Sprintf("%s/%s", syncDir, serviceFile)
+	err = evalTemplate(serviceTemplate, serviceFileOutputPath, s)
 	if err != nil {
-		return fmt.Errorf("evaluating template %s: %s", serviceTemplatePath, err)
-	}
-	runScript := fmt.Sprintf("%s/run-%s.sh", syncDir, m.Name)
-	err = evalTemplate(runTemplatePath, runScript, s)
-	if err != nil {
-		return fmt.Errorf("evaluating template %s: %s", runTemplatePath, err)
+		return fmt.Errorf("evaluating service template: %s", err)
 	}
 
-	_, err = exec.Command("chmod", "+x", runScript).Output()
+	runScriptFile := fmt.Sprintf("run-%s.sh", m.Name)
+	runScriptOutputPath := fmt.Sprintf("%s/%s", syncDir, runScriptFile)
+	err = evalTemplate(runScriptTemplate, runScriptOutputPath, s)
 	if err != nil {
-		return fmt.Errorf("changing file mode for %s: %s", runScript, err)
+		return fmt.Errorf("evaluating run script template: %s", err)
+	}
+
+	_, err = exec.Command("chmod", "+x", runScriptOutputPath).Output()
+	if err != nil {
+		return fmt.Errorf("changing file mode for %s: %s", runScriptOutputPath, err)
+	}
+
+	err = os.Rename(serviceFileOutputPath, fmt.Sprintf("%s/%s", systemDPath, serviceFile))
+	if err != nil {
+		return fmt.Errorf("moving service file to systemd path: %s", err)
+	}
+
+	err = os.Rename(runScriptOutputPath, fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile))
+	if err != nil {
+		return fmt.Errorf("moving run script to home dir: %s", err)
 	}
 
 	return nil
 }
 
-func evalTemplate(templateName string, outputPath string, i interface{}) error {
-	f, err := ioutil.ReadFile(templateName)
-	if err != nil {
-		return fmt.Errorf("opening template file: %s", err)
-	}
-	t, err := template.New(templateName).Delims("<<", ">>").Parse(string(f))
+func evalTemplate(templateFile string, outputPath string, i interface{}) error {
+	t, err := template.New("").Delims("<<", ">>").Parse(templateFile)
 	if err != nil {
 		return fmt.Errorf("opening service file: %s", err)
 	}
