@@ -116,9 +116,9 @@ func main() {
 	}
 }
 
-func getManifest() (Manifest, error) {
+func getManifest(path string) (Manifest, error) {
 	var m Manifest
-	yamlFile, err := ioutil.ReadFile("./.pi-app-updater.yaml")
+	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
 		return m, fmt.Errorf("reading manifest yaml file: %s ", err)
 	}
@@ -210,7 +210,7 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return fmt.Errorf("waiting on tar command: %s", err)
 	}
 
-	m, err := getManifest()
+	m, err := getManifest(fmt.Sprintf("%s/.pi-app-updater.yaml", syncDir))
 	if err != nil {
 		return fmt.Errorf("getting manifest: %s", err)
 	}
@@ -241,8 +241,11 @@ func installRelease(packageName string, releaseName string, url string) error {
 	if err != nil {
 		return fmt.Errorf("parsing service template file: %s", err)
 	}
-	// todo write to file
-	err = t.Execute(os.Stdout, s)
+	fi, err := os.Create(fmt.Sprintf("%s/%s.service", syncDir, m.Name))
+	if err != nil {
+		return fmt.Errorf("opening service file: %s", err)
+	}
+	err = t.Execute(fi, s)
 	if err != nil {
 		return fmt.Errorf("executing template: %s", err)
 	}

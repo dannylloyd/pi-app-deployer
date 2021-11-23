@@ -12,3 +12,7 @@ Use the following arguments with the script `./pi-app-updater --full-repo-name <
 
 `<package-names>`
 - Name of the release tar.gz files to install.
+
+
+## Requirements
+- uses: wangyoucao577/go-release-action@v1.18
