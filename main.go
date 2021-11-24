@@ -267,8 +267,7 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return fmt.Errorf("evaluating run script template: %s", err)
 	}
 
-	// use os.Chmod()?
-	_, err = exec.Command("chmod", "+x", runScriptOutputPath).Output()
+	err = os.Chmod(runScriptOutputPath, 755)
 	if err != nil {
 		return fmt.Errorf("changing file mode for %s: %s", runScriptOutputPath, err)
 	}
