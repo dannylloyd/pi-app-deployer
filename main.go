@@ -28,6 +28,7 @@ const (
 	defaultTestPollPeriodSec = 5
 	systemDPath              = "/etc/systemd/system"
 	piUserHomeDir            = "/home/pi"
+	progressFile             = "/tmp/.pi-app-updater.inprogress"
 )
 
 //go:embed templates/run.tmpl
@@ -53,6 +54,7 @@ type Config struct {
 }
 
 func main() {
+	setUpdateInProgress(false)
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
 	packageNames := flag.String("package-names", "", "Comma separated with no spaces list of package names to install")
 	pollPeriodMin := flag.Int64("poll-period-min", defaultPollPeriodMin, "Number of minutes between polling for new version")
@@ -118,9 +120,13 @@ func main() {
 		var cronLib *cron.Cron
 		cronLib = cron.New()
 		cronLib.AddFunc(cronSpec, func() {
-			err := checkForUpdates(config)
-			if err != nil {
-				log.Println("Error checking for updates:", err)
+			if !updateInProgress() {
+				setUpdateInProgress(true)
+				err := checkForUpdates(config)
+				if err != nil {
+					log.Println("Error checking for updates:", err)
+				}
+				setUpdateInProgress(false)
 			}
 		})
 		cronLib.Start()
@@ -128,6 +134,30 @@ func main() {
 		go forever()
 		select {} // block forever
 	}
+}
+
+func updateInProgress() bool {
+	_, err := os.Stat(progressFile)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func setUpdateInProgress(inProgress bool) error {
+	if inProgress {
+		f, err := os.Create(progressFile)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+	} else {
+		err := os.Remove(progressFile)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getManifest(path string) (Manifest, error) {
@@ -143,16 +173,8 @@ func getManifest(path string) (Manifest, error) {
 	return m, nil
 }
 
-func updateApp(config Config) error {
-	// out, err := exec.Command(updateScript, repoName, string(latestVersion)).Output()
-	// if err != nil {
-	// 	return fmt.Errorf("initiating update command: %s", err)
-	// }
-	// err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
-	// if err != nil {
-	// 	return fmt.Errorf("writing latest version to file: %s", err)
-	// }
-	// log.Println(string(out))
+func updateApp(config Config, latestVersion string) error {
+	// TODO: new releases might have new env vars, how do we handle this but be automated? Need some kind of secrets management?
 	return nil
 }
 
@@ -389,8 +411,8 @@ func checkForUpdates(config Config) error {
 		return fmt.Errorf("getting current version: %s", err)
 	}
 	if latestVersion != currentVersion {
-		log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", currentVersion, string(latestVersion)))
-		err := updateApp(config)
+		log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", currentVersion, latestVersion))
+		err := updateApp(config, latestVersion)
 		if err != nil {
 			return fmt.Errorf("updating app: %s", err)
 		}
