@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -266,22 +267,23 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return fmt.Errorf("evaluating run script template: %s", err)
 	}
 
+	// use os.Chmod()?
 	_, err = exec.Command("chmod", "+x", runScriptOutputPath).Output()
 	if err != nil {
 		return fmt.Errorf("changing file mode for %s: %s", runScriptOutputPath, err)
 	}
 
-	err = moveWithOwnership(serviceFileOutputPath, fmt.Sprintf("%s/%s", systemDPath, serviceFile))
+	err = copyWithOwnership(serviceFileOutputPath, fmt.Sprintf("%s/%s", systemDPath, serviceFile))
 	if err != nil {
 		return err
 	}
 
-	err = moveWithOwnership(runScriptOutputPath, fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile))
+	err = copyWithOwnership(runScriptOutputPath, fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile))
 	if err != nil {
 		return err
 	}
 
-	err = moveWithOwnership(fmt.Sprintf("%s/%s", syncDir, s.Name), fmt.Sprintf("%s/%s", piUserHomeDir, s.Name))
+	err = copyWithOwnership(fmt.Sprintf("%s/%s", syncDir, s.Name), fmt.Sprintf("%s/%s", piUserHomeDir, s.Name))
 	if err != nil {
 		return err
 	}
@@ -296,15 +298,29 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return err
 	}
 
+	// TODO: cleanup sync dir
+
 	return nil
 }
 
-func moveWithOwnership(src, dest string) error {
-	err := os.Rename(src, dest)
+func copyWithOwnership(src, dest string) error {
+	source, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	_, err = exec.Command("chown", "pi:pi", dest).Output()
+	defer source.Close()
+
+	destination, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chown(dest, 1000, 1000)
 	if err != nil {
 		return err
 	}
