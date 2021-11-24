@@ -298,7 +298,10 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return err
 	}
 
-	// TODO: cleanup sync dir
+	err = os.RemoveAll(syncDir)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
