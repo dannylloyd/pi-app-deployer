@@ -29,6 +29,7 @@ const (
 	systemDPath              = "/etc/systemd/system"
 	piUserHomeDir            = "/home/pi"
 	progressFile             = "/tmp/.pi-app-updater.inprogress"
+	versionFile              = "/home/pi/.version"
 )
 
 //go:embed templates/run.tmpl
@@ -88,7 +89,7 @@ func main() {
 			log.Println(fmt.Errorf("App already installed at version %s, remove '--install' flag to check for updates", currentVersion))
 			os.Exit(0)
 		}
-		if err != nil && "reading current version from file: open ./.version: no such file or directory" != err.Error() {
+		if err != nil && fmt.Sprintf("reading current version from file: open %s: no such file or directory", versionFile) != err.Error() {
 			log.Println(fmt.Errorf("getting current version: %s", err))
 			os.Exit(1)
 		}
@@ -103,12 +104,13 @@ func main() {
 			log.Println(fmt.Errorf("error installing app: %s", err))
 			os.Exit(1)
 		}
-		log.Println("Successfully installed app")
-		err = ioutil.WriteFile("./.version", []byte(latestVersion), 0644)
+		err = writeCurrentVersion(latestVersion)
 		if err != nil {
 			log.Println(fmt.Errorf("writing latest version to file: %s", err))
 			os.Exit(1)
 		}
+		log.Println("Successfully installed app")
+
 	} else {
 		var cronSpec string
 		if testMode != "" {
@@ -393,11 +395,23 @@ func getLatestVersion(config Config) (string, error) {
 
 func getCurrentVersion() (string, error) {
 	// TODO use unique name of .version file, like .pi-test.version
-	currentVersionBytes, err := ioutil.ReadFile("./.version")
+	currentVersionBytes, err := ioutil.ReadFile(versionFile)
 	if err != nil {
 		return "", fmt.Errorf("reading current version from file: %s", err)
 	}
 	return strings.TrimSuffix(string(currentVersionBytes), "\n"), nil
+}
+
+func writeCurrentVersion(version string) error {
+	err := ioutil.WriteFile(versionFile, []byte(version), 0644)
+	if err != nil {
+		return err
+	}
+	err = os.Chown(versionFile, 1000, 1000)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func checkForUpdates(config Config) error {
