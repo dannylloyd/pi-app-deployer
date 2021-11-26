@@ -29,7 +29,7 @@ const (
 	systemDPath              = "/etc/systemd/system"
 	piUserHomeDir            = "/home/pi"
 	progressFile             = "/tmp/.pi-app-updater.inprogress"
-	versionFile              = "/home/pi/.version"
+	defaultVersionFile       = "/home/pi/.version"
 )
 
 //go:embed templates/run.tmpl
@@ -89,7 +89,7 @@ func main() {
 			log.Println(fmt.Errorf("App already installed at version %s, remove '--install' flag to check for updates", currentVersion))
 			os.Exit(0)
 		}
-		if err != nil && fmt.Sprintf("reading current version from file: open %s: no such file or directory", versionFile) != err.Error() {
+		if err != nil && fmt.Sprintf("reading current version from file: open %s: no such file or directory", defaultVersionFile) != err.Error() {
 			log.Println(fmt.Errorf("getting current version: %s", err))
 			os.Exit(1)
 		}
@@ -395,7 +395,7 @@ func getLatestVersion(config Config) (string, error) {
 
 func getCurrentVersion() (string, error) {
 	// TODO use unique name of .version file, like .pi-test.version
-	currentVersionBytes, err := ioutil.ReadFile(versionFile)
+	currentVersionBytes, err := ioutil.ReadFile(defaultVersionFile)
 	if err != nil {
 		return "", fmt.Errorf("reading current version from file: %s", err)
 	}
@@ -403,11 +403,11 @@ func getCurrentVersion() (string, error) {
 }
 
 func writeCurrentVersion(version string) error {
-	err := ioutil.WriteFile(versionFile, []byte(version), 0644)
+	err := ioutil.WriteFile(defaultVersionFile, []byte(version), 0644)
 	if err != nil {
 		return err
 	}
-	err = os.Chown(versionFile, 1000, 1000)
+	err = os.Chown(defaultVersionFile, 1000, 1000)
 	if err != nil {
 		return err
 	}
