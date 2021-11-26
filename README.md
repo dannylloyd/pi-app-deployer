@@ -58,9 +58,16 @@ Use the following arguments with the script `./pi-app-updater --repo-name <repo-
 
     ```
     name: pi-app-updater
-    env:
-    - <list of environment vars>
+    heroku:
+      app: pi-app-updater
+      env:
+      - <list of environment vars>
     ```
+
+2. - Heroku account and API key to dynamically lookup env vars in a secure location. Uses Heroku app's environment config get all env vars.
+
+3. Github API token to lookup releases. Otherwise polling for updates could lead to rate limiting.
+
 
 ## TODO
 - update

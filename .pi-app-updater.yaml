@@ -1,3 +1,5 @@
 name: pi-app-updater
-env:
-  - HEROKU_API_KEY
+heroku:
+  app: pi-app-updater
+  env:
+    - POLLING_PERIOD
