@@ -26,6 +26,20 @@ Use the following arguments with the script `./pi-app-updater --repo-name <repo-
 - `Optional`: Disables systemd unit and removes all files 
 
 ## Requirements
+1. Add `.pi-app-updater.yaml` to the root of the repo
+
+    ```
+    name: <name-of-app>
+    heroku:
+      app: <heroku-app-name>
+      env:
+      - <list of environment vars>
+    ```
+
+1. - Create Heroku account and API key to dynamically lookup env vars in a secure location. Uses Heroku app's environment config get all env vars. Create a Heroku app and save name of app.
+
+1. Github API token to lookup releases. Otherwise polling for updates could lead to rate limiting.
+
 1. Create github action in your repo: `.github/workflows/release.yml`
 
     ```
@@ -53,21 +67,6 @@ Use the following arguments with the script `./pi-app-updater --repo-name <repo-
             extra_files: .pi-app-updater.yaml
 
     ```
-
-1. Add `.pi-app-updater.yaml` to the root of the repo
-
-    ```
-    name: pi-app-updater
-    heroku:
-      app: pi-app-updater
-      env:
-      - <list of environment vars>
-    ```
-
-2. - Heroku account and API key to dynamically lookup env vars in a secure location. Uses Heroku app's environment config get all env vars.
-
-3. Github API token to lookup releases. Otherwise polling for updates could lead to rate limiting.
-
 
 ## TODO
 - update

@@ -39,7 +39,7 @@ var runScriptTemplate string
 //go:embed templates/service.tmpl
 var serviceTemplate string
 
-var testMode string
+var testMode bool
 
 var versionFile string
 
@@ -68,9 +68,9 @@ func main() {
 	install := flag.Bool("install", false, "First time install of the application. Will not trigger checking for updates")
 	flag.Parse()
 
-	testMode = os.Getenv("TEST_MODE")
+	testMode = os.Getenv("TEST_MODE") == "true"
 	versionFile = defaultVersionFile
-	if testMode == "true" {
+	if testMode {
 		fmt.Println("Running in test mode")
 		versionFile = "./.version"
 	}
@@ -124,7 +124,7 @@ func main() {
 
 	} else {
 		var cronSpec string
-		if testMode != "" {
+		if testMode {
 			cronSpec = fmt.Sprintf("@every %ds", defaultTestPollPeriodSec)
 		} else {
 			cronSpec = fmt.Sprintf("@every %dm", pollPeriodMin)
@@ -273,20 +273,26 @@ func installRelease(packageName string, releaseName string, url string) error {
 		HerokuAPIKey string
 	}
 
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Enter value for Heroku API key: ")
-	apiKey, err := reader.ReadString('\n')
-	if err != nil {
-		return err
+	apiKeyEnv := os.Getenv("HEROKU_API_KEY")
+	var apiKey string
+	if apiKeyEnv == "" {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter value for Heroku API key: ")
+		apiKey, err = reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+		apiKey = strings.TrimSuffix(apiKey, "\n")
+	} else {
+		apiKey = apiKeyEnv
 	}
-	apiKey = strings.TrimSuffix(apiKey, "\n")
 
 	hClient, err := heroku.NewClient(m.Heroku.App, apiKey)
 	if err != nil {
 		return err
 	}
 
-	err = hClient.GetEnv()
+	envVars, err := hClient.GetEnv()
 	if err != nil {
 		return fmt.Errorf("getting env from heroku: %s", err)
 	}
@@ -301,8 +307,9 @@ func installRelease(packageName string, releaseName string, url string) error {
 	}
 
 	for _, v := range m.Heroku.Env {
-		fmt.Println(v)
-		s.Keys = append(s.Keys, v)
+		if envVars[v] != "" {
+			s.Keys = append(s.Keys, v)
+		}
 	}
 
 	serviceFile := fmt.Sprintf("%s.service", m.Name)
@@ -317,6 +324,11 @@ func installRelease(packageName string, releaseName string, url string) error {
 	err = evalTemplate(runScriptTemplate, runScriptOutputPath, s)
 	if err != nil {
 		return fmt.Errorf("evaluating run script template: %s", err)
+	}
+
+	if testMode {
+		fmt.Println("Test mode, not moving files")
+		return nil
 	}
 
 	err = os.Chmod(runScriptOutputPath, 755)
