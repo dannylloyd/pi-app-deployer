@@ -14,9 +14,5 @@ StandardOutput=inherit
 StandardError=inherit
 Restart=always
 RestartSec=30
-User=pi<<.NewLine>>
-
-<<- $values := .Map ->>
-<<- range $key := .Keys ->>
-Environment=<< $key >>=<< index $values $key >>
-<< end >>
+User=pi
+Environment=HEROKU_API_KEY=<< .HerokuAPIKey >>

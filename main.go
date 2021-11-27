@@ -19,6 +19,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/heroku"
 	"github.com/google/go-github/github"
 	"github.com/robfig/cron/v3"
 )
@@ -40,13 +41,18 @@ var serviceTemplate string
 
 var testMode string
 
+var versionFile string
+
 type AppInfo struct {
 	TagName string `json:"tag_name"`
 }
 
 type Manifest struct {
-	Name string   `yaml:"name"`
-	Env  []string `yaml:"env"`
+	Name   string `yaml:"name"`
+	Heroku struct {
+		App string   `yaml:"app"`
+		Env []string `yaml:"env"`
+	} `yaml:"heroku"`
 }
 
 type Config struct {
@@ -63,6 +69,11 @@ func main() {
 	flag.Parse()
 
 	testMode = os.Getenv("TEST_MODE")
+	versionFile = defaultVersionFile
+	if testMode == "true" {
+		fmt.Println("Running in test mode")
+		versionFile = "./.version"
+	}
 
 	var stringArgs = map[string]string{
 		"repo-name":    *repoName,
@@ -89,7 +100,7 @@ func main() {
 			log.Println(fmt.Errorf("App already installed at version %s, remove '--install' flag to check for updates", currentVersion))
 			os.Exit(0)
 		}
-		if err != nil && fmt.Sprintf("reading current version from file: open %s: no such file or directory", defaultVersionFile) != err.Error() {
+		if err != nil && fmt.Sprintf("reading current version from file: open %s: no such file or directory", versionFile) != err.Error() {
 			log.Println(fmt.Errorf("getting current version: %s", err))
 			os.Exit(1)
 		}
@@ -254,27 +265,44 @@ func installRelease(packageName string, releaseName string, url string) error {
 	}
 
 	type srvData struct {
-		Name        string
-		Description string
-		Keys        []string
-		Map         map[string]string
-		NewLine     string
+		Name         string
+		Description  string
+		Keys         []string
+		Map          map[string]string
+		NewLine      string
+		HerokuAPIKey string
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter value for Heroku API key: ")
+	apiKey, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	apiKey = strings.TrimSuffix(apiKey, "\n")
+
+	hClient, err := heroku.NewClient(m.Heroku.App, apiKey)
+	if err != nil {
+		return err
+	}
+
+	err = hClient.GetEnv()
+	if err != nil {
+		return fmt.Errorf("getting env from heroku: %s", err)
 	}
 
 	s := srvData{
-		Name:        m.Name,
-		Description: m.Name,
-		Keys:        make([]string, 0),
-		Map:         make(map[string]string, 0),
-		NewLine:     "\n",
+		Name:         m.Name,
+		Description:  m.Name,
+		Keys:         make([]string, 0),
+		Map:          make(map[string]string, 0),
+		NewLine:      "\n",
+		HerokuAPIKey: apiKey,
 	}
 
-	for _, v := range m.Env {
+	for _, v := range m.Heroku.Env {
+		fmt.Println(v)
 		s.Keys = append(s.Keys, v)
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print(fmt.Sprintf("Enter value for %s: ", v))
-		text, _ := reader.ReadString('\n')
-		s.Map[v] = strings.TrimSuffix(string(text), "\n")
 	}
 
 	serviceFile := fmt.Sprintf("%s.service", m.Name)
@@ -395,7 +423,7 @@ func getLatestVersion(config Config) (string, error) {
 
 func getCurrentVersion() (string, error) {
 	// TODO use unique name of .version file, like .pi-test.version
-	currentVersionBytes, err := ioutil.ReadFile(defaultVersionFile)
+	currentVersionBytes, err := ioutil.ReadFile(versionFile)
 	if err != nil {
 		return "", fmt.Errorf("reading current version from file: %s", err)
 	}
@@ -403,14 +431,14 @@ func getCurrentVersion() (string, error) {
 }
 
 func writeCurrentVersion(version string) error {
-	err := ioutil.WriteFile(defaultVersionFile, []byte(version), 0644)
+	err := ioutil.WriteFile(versionFile, []byte(version), 0644)
 	if err != nil {
 		return err
 	}
-	err = os.Chown(defaultVersionFile, 1000, 1000)
-	if err != nil {
-		return err
-	}
+	// err = os.Chown(versionFile, 1000, 1000)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
