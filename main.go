@@ -186,8 +186,43 @@ func getManifest(path string) (Manifest, error) {
 	return m, nil
 }
 
+func findApiKeyFromSystemd(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	var keyLineString string
+	scanner := bufio.NewScanner(f)
+	line := 1
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "HEROKU_API_KEY") {
+			keyLineString = scanner.Text()
+			break
+		}
+		line++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	split := strings.Split(keyLineString, "=")
+	if len(split) != 3 {
+		return "", fmt.Errorf("expected systemd file heroku api key line to have length 3")
+	}
+
+	return split[2], nil
+}
+
 func updateApp(config Config, latestVersion string) error {
-	// TODO: new releases might have new env vars, how do we handle this but be automated? Need some kind of secrets management?
+	apiKey, err := findApiKeyFromSystemd("/tmp/pi-test/pi-test.service")
+	if err != nil {
+		return err
+	}
+	os.Setenv("HEROKU_API_KEY", apiKey)
+	installApp(config, latestVersion)
 	return nil
 }
 
@@ -469,6 +504,10 @@ func checkForUpdates(config Config) error {
 		err := updateApp(config, latestVersion)
 		if err != nil {
 			return fmt.Errorf("updating app: %s", err)
+		}
+		err = writeCurrentVersion(latestVersion)
+		if err != nil {
+			return fmt.Errorf("writing latest version to file: %s", err)
 		}
 		log.Println("Successfully updated app")
 	} else {
