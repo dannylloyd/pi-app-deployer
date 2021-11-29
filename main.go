@@ -482,10 +482,12 @@ func writeCurrentVersion(version string) error {
 	if err != nil {
 		return err
 	}
-	// err = os.Chown(versionFile, 1000, 1000)
-	// if err != nil {
-	// 	return err
-	// }
+	if !testMode {
+		err = os.Chown(versionFile, 1000, 1000)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
