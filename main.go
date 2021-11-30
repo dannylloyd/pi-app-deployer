@@ -56,14 +56,14 @@ type Manifest struct {
 }
 
 type Config struct {
-	RepoName     string
-	PackageNames []string
+	RepoName    string
+	PackageName string
 }
 
 func main() {
 	setUpdateInProgress(false)
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
-	packageNames := flag.String("package-names", "", "Comma separated with no spaces list of package names to install")
+	packageName := flag.String("package-name", "", "Package name to install")
 	pollPeriodMin := flag.Int64("poll-period-min", defaultPollPeriodMin, "Number of minutes between polling for new version")
 	install := flag.Bool("install", false, "First time install of the application. Will not trigger checking for updates")
 	flag.Parse()
@@ -77,7 +77,7 @@ func main() {
 
 	var stringArgs = map[string]string{
 		"repo-name":    *repoName,
-		"binary-names": *packageNames,
+		"package-name": *packageName,
 	}
 	for k, v := range stringArgs {
 		if v == "" {
@@ -86,12 +86,8 @@ func main() {
 	}
 
 	config := Config{
-		RepoName:     *repoName,
-		PackageNames: []string{},
-	}
-
-	for _, v := range strings.Split(*packageNames, ",") {
-		config.PackageNames = append(config.PackageNames, v)
+		RepoName:    *repoName,
+		PackageName: *packageName,
 	}
 
 	if *install {
@@ -243,22 +239,18 @@ func installApp(config Config, latestVersion string) error {
 	if err != nil {
 		return fmt.Errorf("unmarshalling json: %s", err)
 	}
-	found := true
-	for _, pName := range config.PackageNames {
-		for _, a := range release.Assets {
-			expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", pName, latestVersion)
-			if expectedName == *a.Name {
-				log.Println(fmt.Sprintf("Installing release %s", *a.Name))
-				err := installRelease(pName, *a.Name, *a.BrowserDownloadURL)
-				if err != nil {
-					return err
-				}
+
+	for _, a := range release.Assets {
+		expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", config.PackageName, latestVersion)
+		if expectedName == *a.Name {
+			log.Println(fmt.Sprintf("Installing release %s", *a.Name))
+			err := installRelease(config.PackageName, *a.Name, *a.BrowserDownloadURL)
+			if err != nil {
+				return err
 			}
 		}
 	}
-	if !found {
-		return fmt.Errorf("no packages found")
-	}
+
 	return nil
 }
 
@@ -450,7 +442,8 @@ func getLatestVersion(config Config) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("token %s", os.Getenv("GITHUB_TOKEN")))
+	// TODO: if no rate limiting risk exists then remove this comment
+	// req.Header.Set("Authorization", fmt.Sprintf("token %s", os.Getenv("GITHUB_TOKEN")))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -513,7 +506,7 @@ func checkForUpdates(config Config) error {
 		}
 		log.Println("Successfully updated app")
 	} else {
-		log.Println("App already up to date")
+		log.Println(fmt.Sprintf("App already up to date. Current version: %s, latest version: %s", currentVersion, latestVersion))
 	}
 
 	return nil
