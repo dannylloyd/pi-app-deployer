@@ -9,21 +9,19 @@ It is annoying to update apps running on a Raspberry Pi. The app must be built l
 
 ## Usage
 
-Use the following arguments with the script `./pi-app-updater --repo-name <repo-name> --package-names <package-names> [--install] [--uninstall]`.
+Use the following arguments with the script `./pi-app-updater --repo-name <repo-name> --package-name <package-name> [--install] [--uninstall]`.
 
 `--repo-name <repo-name>`
 - Name of the Github repo including the owner. For example `andrewmarklloyd/pi-app-updater`. The updater will use the full name in the API call to get the latest release and check if a newer version is available. For example given the repo name above, the API URL that the updater will check is `https://api.github.com/repos/andrewmarklloyd/pi-sensor/releases/latest`
 
-
-`--package-names <package-names>`
-- Name of the release tar.gz files to install.
+`--package-name <package-name>`
+- Name of the release tar.gz file to install.
 
 `[--install]`
 - `Optional`: Indicates the script should run the first time installation for an app.
-    - Allows user input of env vars to be written to the systemd service file
 
 `[--uninstall]`
-- `Optional`: Disables systemd unit and removes all files 
+- `Optional`: Disables systemd unit and removes all files.
 
 ## Requirements
 1. Add `.pi-app-updater.yaml` to the root of the repo
@@ -36,9 +34,7 @@ Use the following arguments with the script `./pi-app-updater --repo-name <repo-
       - <list of environment vars>
     ```
 
-1. - Create Heroku account and API key to dynamically lookup env vars in a secure location. Uses Heroku app's environment config get all env vars. Create a Heroku app and save name of app.
-
-1. Github API token to lookup releases. Otherwise polling for updates could lead to rate limiting.
+1. Create Heroku account and get API key to dynamically lookup env vars in a secure location. Uses Heroku app's environment config get all env vars. Create a Heroku app and save name of app.
 
 1. Create github action in your repo: `.github/workflows/release.yml`
 
@@ -68,7 +64,10 @@ Use the following arguments with the script `./pi-app-updater --repo-name <repo-
 
     ```
 
+1. Create a github release
+
+
 ## TODO
-- update
+- refactor with readable packages
 - uninstall
 - various cleanup
