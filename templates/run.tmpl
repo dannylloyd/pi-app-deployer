@@ -6,7 +6,7 @@ if [[ -z ${HEROKU_API_KEY} ]]; then
   exit 1
 fi
 
-vars=$(curl -s -n https://api.heroku.com/apps/<<.Name>>/config-vars \
+vars=$(curl -s -n https://api.heroku.com/apps/<<.HerokuAppName>>/config-vars \
   -H "Accept: application/vnd.heroku+json; version=3" \
   -H "Authorization: Bearer ${HEROKU_API_KEY}")
   <<$newline>>
@@ -20,4 +20,4 @@ fi<<$newline>>
 << end >>
 unset HEROKU_API_KEY
 
-/home/pi/<<.Name>>
+/home/pi/<<.BinaryName>>

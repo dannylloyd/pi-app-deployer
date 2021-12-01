@@ -213,6 +213,7 @@ func findApiKeyFromSystemd(path string) (string, error) {
 }
 
 func updateApp(config Config, latestVersion string) error {
+	// TODO: find actual path and name of service file
 	apiKey, err := findApiKeyFromSystemd("/tmp/pi-test/pi-test.service")
 	if err != nil {
 		return err
@@ -292,12 +293,14 @@ func installRelease(packageName string, releaseName string, url string) error {
 	}
 
 	type srvData struct {
-		Name         string
-		Description  string
-		Keys         []string
-		Map          map[string]string
-		NewLine      string
-		HerokuAPIKey string
+		Name          string
+		Description   string
+		Keys          []string
+		Map           map[string]string
+		NewLine       string
+		HerokuAPIKey  string
+		HerokuAppName string
+		BinaryName    string
 	}
 
 	apiKeyEnv := os.Getenv("HEROKU_API_KEY")
@@ -325,12 +328,14 @@ func installRelease(packageName string, releaseName string, url string) error {
 	}
 
 	s := srvData{
-		Name:         m.Name,
-		Description:  m.Name,
-		Keys:         make([]string, 0),
-		Map:          make(map[string]string, 0),
-		NewLine:      "\n",
-		HerokuAPIKey: apiKey,
+		Name:          packageName,
+		Description:   packageName,
+		Keys:          make([]string, 0),
+		Map:           make(map[string]string, 0),
+		NewLine:       "\n",
+		HerokuAPIKey:  apiKey,
+		HerokuAppName: m.Heroku.App,
+		BinaryName:    packageName,
 	}
 
 	for _, v := range m.Heroku.Env {
@@ -339,14 +344,14 @@ func installRelease(packageName string, releaseName string, url string) error {
 		}
 	}
 
-	serviceFile := fmt.Sprintf("%s.service", m.Name)
+	serviceFile := fmt.Sprintf("%s.service", packageName)
 	serviceFileOutputPath := fmt.Sprintf("%s/%s", syncDir, serviceFile)
 	err = evalTemplate(serviceTemplate, serviceFileOutputPath, s)
 	if err != nil {
 		return fmt.Errorf("evaluating service template: %s", err)
 	}
 
-	runScriptFile := fmt.Sprintf("run-%s.sh", m.Name)
+	runScriptFile := fmt.Sprintf("run-%s.sh", packageName)
 	runScriptOutputPath := fmt.Sprintf("%s/%s", syncDir, runScriptFile)
 	err = evalTemplate(runScriptTemplate, runScriptOutputPath, s)
 	if err != nil {
@@ -358,39 +363,44 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return nil
 	}
 
-	err = os.Chmod(runScriptOutputPath, 755)
+	err = os.Chmod(runScriptOutputPath, 0755)
 	if err != nil {
 		return fmt.Errorf("changing file mode for %s: %s", runScriptOutputPath, err)
 	}
 
 	err = copyWithOwnership(serviceFileOutputPath, fmt.Sprintf("%s/%s", systemDPath, serviceFile))
 	if err != nil {
-		return err
+		return fmt.Errorf("copying service file to systemd path: %s", err)
 	}
 
 	err = copyWithOwnership(runScriptOutputPath, fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile))
 	if err != nil {
-		return err
+		return fmt.Errorf("copying run script file to home dir: %s", err)
 	}
 
-	err = copyWithOwnership(fmt.Sprintf("%s/%s", syncDir, s.Name), fmt.Sprintf("%s/%s", piUserHomeDir, s.Name))
+	packageBinaryOutputPath := fmt.Sprintf("%s/%s", piUserHomeDir, packageName)
+	err = copyWithOwnership(fmt.Sprintf("%s/%s", syncDir, packageName), packageBinaryOutputPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("copying binary package file to home dir: %s", err)
+	}
+	err = os.Chmod(packageBinaryOutputPath, 0755)
+	if err != nil {
+		return fmt.Errorf("changing file mode for %s: %s", packageBinaryOutputPath, err)
 	}
 
 	_, err = exec.Command("systemctl", "daemon-reload").Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("%s", err)
 	}
 
 	_, err = exec.Command("systemctl", "start", serviceFile).Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("%s", err)
 	}
 
 	err = os.RemoveAll(syncDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s", err)
 	}
 
 	return nil
