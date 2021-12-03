@@ -81,7 +81,7 @@ func main() {
 		}
 	}
 
-	config := config.Config{
+	cfg := config.Config{
 		RepoName:    *repoName,
 		PackageName: *packageName,
 	}
@@ -97,12 +97,12 @@ func main() {
 			os.Exit(1)
 		}
 
-		latestVersion, err := getLatestVersion(config)
+		latestVersion, err := getLatestVersion(cfg)
 		if err != nil {
 			log.Println(fmt.Sprintf("error getting latest version: %s", err))
 			os.Exit(1)
 		}
-		err = installApp(config, latestVersion)
+		err = installApp(cfg, latestVersion)
 		if err != nil {
 			log.Println(fmt.Errorf("error installing app: %s", err))
 			os.Exit(1)
@@ -127,7 +127,7 @@ func main() {
 		cronLib.AddFunc(cronSpec, func() {
 			if !updateInProgress() {
 				setUpdateInProgress(true)
-				err := checkForUpdates(config)
+				err := checkForUpdates(cfg)
 				if err != nil {
 					log.Println("Error checking for updates:", err)
 				}
