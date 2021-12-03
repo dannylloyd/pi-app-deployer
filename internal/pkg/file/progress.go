@@ -1,14 +1,9 @@
 package file
 
-import (
-	"os"
-)
+import "os"
 
 const (
-	systemDPath        = "/etc/systemd/system"
-	piUserHomeDir      = "/home/pi"
-	progressFile       = "/tmp/.pi-app-updater.inprogress"
-	defaultVersionFile = "/home/pi/.version"
+	progressFile = "/tmp/.pi-app-updater.inprogress"
 )
 
 func SetUpdateInProgress(inProgress bool) error {

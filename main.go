@@ -8,14 +8,11 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
-
-	"gopkg.in/yaml.v2"
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
@@ -29,8 +26,6 @@ const (
 	defaultTestPollPeriodSec = 5
 	systemDPath              = "/etc/systemd/system"
 	piUserHomeDir            = "/home/pi"
-	progressFile             = "/tmp/.pi-app-updater.inprogress"
-	defaultVersionFile       = "/home/pi/.version"
 )
 
 //go:embed templates/run.tmpl
@@ -41,20 +36,6 @@ var serviceTemplate string
 
 var testMode bool
 
-var versionFile string
-
-type AppInfo struct {
-	TagName string `json:"tag_name"`
-}
-
-type Manifest struct {
-	Name   string `yaml:"name"`
-	Heroku struct {
-		App string   `yaml:"app"`
-		Env []string `yaml:"env"`
-	} `yaml:"heroku"`
-}
-
 func main() {
 	file.SetUpdateInProgress(false)
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
@@ -64,10 +45,9 @@ func main() {
 	flag.Parse()
 
 	testMode = os.Getenv("TEST_MODE") == "true"
-	versionFile = defaultVersionFile
+
 	if testMode {
 		fmt.Println("Running in test mode")
-		versionFile = "./.version"
 	}
 
 	var stringArgs = map[string]string{
@@ -85,16 +65,17 @@ func main() {
 		PackageName: *packageName,
 	}
 
+	vTool := file.NewVersionTool(testMode)
 	ghClient := github.NewClient(cfg)
 
 	if *install {
-		currentVersion, err := getCurrentVersion()
-		if err == nil && currentVersion != "" {
-			log.Println(fmt.Errorf("App already installed at version %s, remove '--install' flag to check for updates", currentVersion))
-			os.Exit(0)
+		installed, err := vTool.AppInstalled()
+		if err != nil {
+			log.Println(fmt.Errorf("checking if app is installed already: %s", err))
+			os.Exit(1)
 		}
-		if err != nil && fmt.Sprintf("reading current version from file: open %s: no such file or directory", versionFile) != err.Error() {
-			log.Println(fmt.Errorf("getting current version: %s", err))
+		if installed {
+			log.Println("App already installed, remove '--install' flag to check for updates")
 			os.Exit(1)
 		}
 
@@ -109,7 +90,7 @@ func main() {
 			log.Println(fmt.Errorf("error installing app: %s", err))
 			os.Exit(1)
 		}
-		err = writeCurrentVersion(latest.Version)
+		err = vTool.WriteCurrentVersion(latest.Version)
 		if err != nil {
 			log.Println(fmt.Errorf("writing latest version to file: %s", err))
 			os.Exit(1)
@@ -129,7 +110,7 @@ func main() {
 		cronLib.AddFunc(cronSpec, func() {
 			if !file.UpdateInProgress() {
 				file.SetUpdateInProgress(true)
-				err := checkForUpdates(ghClient, cfg)
+				err := checkForUpdates(ghClient, vTool, cfg)
 				if err != nil {
 					log.Println("Error checking for updates:", err)
 				}
@@ -141,19 +122,6 @@ func main() {
 		go forever()
 		select {} // block forever
 	}
-}
-
-func getManifest(path string) (Manifest, error) {
-	var m Manifest
-	yamlFile, err := ioutil.ReadFile(path)
-	if err != nil {
-		return m, fmt.Errorf("reading manifest yaml file: %s ", err)
-	}
-	err = yaml.Unmarshal(yamlFile, &m)
-	if err != nil {
-		return m, fmt.Errorf("unmarshalling manifest yaml file: %s ", err)
-	}
-	return m, nil
 }
 
 func findApiKeyFromSystemd(cfg config.Config) (string, error) {
@@ -226,7 +194,7 @@ func installRelease(packageName string, url string) error {
 		return fmt.Errorf("waiting on tar command: %s", err)
 	}
 
-	m, err := getManifest(fmt.Sprintf("%s/.pi-app-updater.yaml", syncDir))
+	m, err := file.GetManifest(fmt.Sprintf("%s/.pi-app-updater.yaml", syncDir))
 	if err != nil {
 		return fmt.Errorf("getting manifest: %s", err)
 	}
@@ -387,36 +355,13 @@ func evalTemplate(templateFile string, outputPath string, i interface{}) error {
 	return nil
 }
 
-func getCurrentVersion() (string, error) {
-	// TODO use unique name of .version file, like .pi-test.version
-	currentVersionBytes, err := ioutil.ReadFile(versionFile)
-	if err != nil {
-		return "", fmt.Errorf("reading current version from file: %s", err)
-	}
-	return strings.TrimSuffix(string(currentVersionBytes), "\n"), nil
-}
-
-func writeCurrentVersion(version string) error {
-	err := ioutil.WriteFile(versionFile, []byte(version), 0644)
-	if err != nil {
-		return err
-	}
-	if !testMode {
-		err = os.Chown(versionFile, 1000, 1000)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func checkForUpdates(ghClient github.GithubClient, cfg config.Config) error {
+func checkForUpdates(ghClient github.GithubClient, vTool file.VersionTool, cfg config.Config) error {
 	log.Println("Checking for updates")
 	latest, err := ghClient.GetLatestVersion(cfg)
 	if err != nil {
 		return fmt.Errorf("getting latest version: %s", err)
 	}
-	currentVersion, err := getCurrentVersion()
+	currentVersion, err := vTool.GetCurrentVersion()
 	if err != nil {
 		return fmt.Errorf("getting current version: %s", err)
 	}
@@ -433,7 +378,7 @@ func checkForUpdates(ghClient github.GithubClient, cfg config.Config) error {
 		if err != nil {
 			return fmt.Errorf("updating app: %s", err)
 		}
-		err = writeCurrentVersion(latest.Version)
+		err = vTool.WriteCurrentVersion(latest.Version)
 		if err != nil {
 			return fmt.Errorf("writing latest version to file: %s", err)
 		}
