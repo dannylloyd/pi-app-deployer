@@ -456,10 +456,10 @@ func checkForUpdates(ghClient github.GithubClient, cfg config.Config) error {
 		if err != nil {
 			return fmt.Errorf("updating app: %s", err)
 		}
-		// err = writeCurrentVersion(latest.Version)
-		// if err != nil {
-		// 	return fmt.Errorf("writing latest version to file: %s", err)
-		// }
+		err = writeCurrentVersion(latest.Version)
+		if err != nil {
+			return fmt.Errorf("writing latest version to file: %s", err)
+		}
 		log.Println("Successfully updated app")
 	} else {
 		log.Println(fmt.Sprintf("App already up to date. Current version: %s, latest version: %s", currentVersion, latest.Version))
