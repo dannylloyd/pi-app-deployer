@@ -4,14 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	_ "embed"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -20,8 +18,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/heroku"
-	"github.com/google/go-github/github"
 	"github.com/robfig/cron/v3"
 )
 
@@ -86,6 +84,8 @@ func main() {
 		PackageName: *packageName,
 	}
 
+	ghClient := github.NewClient(cfg)
+
 	if *install {
 		currentVersion, err := getCurrentVersion()
 		if err == nil && currentVersion != "" {
@@ -97,17 +97,18 @@ func main() {
 			os.Exit(1)
 		}
 
-		latestVersion, err := getLatestVersion(cfg)
+		latest, err := ghClient.GetLatestVersion(cfg)
 		if err != nil {
-			log.Println(fmt.Sprintf("error getting latest version: %s", err))
+			log.Println(fmt.Sprintf("error getting latest version from github: %s", err))
 			os.Exit(1)
 		}
-		err = installApp(cfg, latestVersion)
+
+		err = installRelease(cfg.PackageName, latest.AssetDownloadURL)
 		if err != nil {
 			log.Println(fmt.Errorf("error installing app: %s", err))
 			os.Exit(1)
 		}
-		err = writeCurrentVersion(latestVersion)
+		err = writeCurrentVersion(latest.Version)
 		if err != nil {
 			log.Println(fmt.Errorf("writing latest version to file: %s", err))
 			os.Exit(1)
@@ -127,7 +128,7 @@ func main() {
 		cronLib.AddFunc(cronSpec, func() {
 			if !updateInProgress() {
 				setUpdateInProgress(true)
-				err := checkForUpdates(cfg)
+				err := checkForUpdates(ghClient, cfg)
 				if err != nil {
 					log.Println("Error checking for updates:", err)
 				}
@@ -178,7 +179,14 @@ func getManifest(path string) (Manifest, error) {
 	return m, nil
 }
 
-func findApiKeyFromSystemd(path string) (string, error) {
+func findApiKeyFromSystemd(cfg config.Config) (string, error) {
+	var path string
+	if testMode {
+		path = fmt.Sprintf("/tmp/%s/%s.service", cfg.PackageName, cfg.PackageName)
+	} else {
+		path = fmt.Sprintf("%s/%s.service", systemDPath, cfg.PackageName)
+	}
+
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -208,50 +216,8 @@ func findApiKeyFromSystemd(path string) (string, error) {
 	return split[2], nil
 }
 
-func updateApp(cfg config.Config, latestVersion string) error {
-	// TODO: find actual path and name of service file
-	apiKey, err := findApiKeyFromSystemd("/tmp/pi-test/pi-test.service")
-	if err != nil {
-		return err
-	}
-	os.Setenv("HEROKU_API_KEY", apiKey)
-	installApp(cfg, latestVersion)
-	return nil
-}
-
-func installApp(cfg config.Config, latestVersion string) error {
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", cfg.RepoName))
-	if err != nil {
-		return fmt.Errorf("requesting latest release: %s", err)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	var release github.RepositoryRelease
-	err = json.Unmarshal(body, &release)
-
-	if err != nil {
-		return fmt.Errorf("unmarshalling json: %s", err)
-	}
-
-	for _, a := range release.Assets {
-		expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", cfg.PackageName, latestVersion)
-		if expectedName == *a.Name {
-			log.Println(fmt.Sprintf("Installing release %s", *a.Name))
-			err := installRelease(cfg.PackageName, *a.Name, *a.BrowserDownloadURL)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func installRelease(packageName string, releaseName string, url string) error {
+func installRelease(packageName string, url string) error {
+	fmt.Println(fmt.Sprintf("Downloading latest release of %s", packageName))
 	syncDir := fmt.Sprintf("/tmp/%s", packageName)
 	err := os.RemoveAll(syncDir)
 	if err != nil {
@@ -444,30 +410,6 @@ func evalTemplate(templateFile string, outputPath string, i interface{}) error {
 	return nil
 }
 
-func getLatestVersion(cfg config.Config) (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", cfg.RepoName), nil)
-	if err != nil {
-		return "", err
-	}
-	// TODO: if no rate limiting risk exists then remove this comment
-	// req.Header.Set("Authorization", fmt.Sprintf("token %s", os.Getenv("GITHUB_TOKEN")))
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	var info AppInfo
-	err = json.NewDecoder(resp.Body).Decode(&info)
-	if err != nil {
-		return "", fmt.Errorf("parsing version from api response: %s", err)
-	}
-	if info.TagName == "" {
-		return "", fmt.Errorf("empty tag name from api response: %s", info)
-	}
-	latestVersion := []byte(info.TagName)
-	return string(latestVersion), nil
-}
-
 func getCurrentVersion() (string, error) {
 	// TODO use unique name of .version file, like .pi-test.version
 	currentVersionBytes, err := ioutil.ReadFile(versionFile)
@@ -491,9 +433,9 @@ func writeCurrentVersion(version string) error {
 	return nil
 }
 
-func checkForUpdates(cfg config.Config) error {
+func checkForUpdates(ghClient github.GithubClient, cfg config.Config) error {
 	log.Println("Checking for updates")
-	latestVersion, err := getLatestVersion(cfg)
+	latest, err := ghClient.GetLatestVersion(cfg)
 	if err != nil {
 		return fmt.Errorf("getting latest version: %s", err)
 	}
@@ -501,19 +443,26 @@ func checkForUpdates(cfg config.Config) error {
 	if err != nil {
 		return fmt.Errorf("getting current version: %s", err)
 	}
-	if latestVersion != currentVersion {
-		log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", currentVersion, latestVersion))
-		err := updateApp(cfg, latestVersion)
+	if latest.Version != currentVersion {
+		log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", currentVersion, latest.Version))
+
+		apiKey, err := findApiKeyFromSystemd(cfg)
+		if err != nil {
+			return err
+		}
+		os.Setenv("HEROKU_API_KEY", apiKey)
+
+		err = installRelease(cfg.PackageName, latest.AssetDownloadURL)
 		if err != nil {
 			return fmt.Errorf("updating app: %s", err)
 		}
-		err = writeCurrentVersion(latestVersion)
-		if err != nil {
-			return fmt.Errorf("writing latest version to file: %s", err)
-		}
+		// err = writeCurrentVersion(latest.Version)
+		// if err != nil {
+		// 	return fmt.Errorf("writing latest version to file: %s", err)
+		// }
 		log.Println("Successfully updated app")
 	} else {
-		log.Println(fmt.Sprintf("App already up to date. Current version: %s, latest version: %s", currentVersion, latestVersion))
+		log.Println(fmt.Sprintf("App already up to date. Current version: %s, latest version: %s", currentVersion, latest.Version))
 	}
 
 	return nil
