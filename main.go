@@ -19,6 +19,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/heroku"
 	"github.com/google/go-github/github"
 	"github.com/robfig/cron/v3"
@@ -55,11 +56,6 @@ type Manifest struct {
 	} `yaml:"heroku"`
 }
 
-type Config struct {
-	RepoName    string
-	PackageName string
-}
-
 func main() {
 	setUpdateInProgress(false)
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
@@ -85,7 +81,7 @@ func main() {
 		}
 	}
 
-	config := Config{
+	config := config.Config{
 		RepoName:    *repoName,
 		PackageName: *packageName,
 	}
@@ -212,19 +208,19 @@ func findApiKeyFromSystemd(path string) (string, error) {
 	return split[2], nil
 }
 
-func updateApp(config Config, latestVersion string) error {
+func updateApp(cfg config.Config, latestVersion string) error {
 	// TODO: find actual path and name of service file
 	apiKey, err := findApiKeyFromSystemd("/tmp/pi-test/pi-test.service")
 	if err != nil {
 		return err
 	}
 	os.Setenv("HEROKU_API_KEY", apiKey)
-	installApp(config, latestVersion)
+	installApp(cfg, latestVersion)
 	return nil
 }
 
-func installApp(config Config, latestVersion string) error {
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName))
+func installApp(cfg config.Config, latestVersion string) error {
+	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", cfg.RepoName))
 	if err != nil {
 		return fmt.Errorf("requesting latest release: %s", err)
 	}
@@ -242,10 +238,10 @@ func installApp(config Config, latestVersion string) error {
 	}
 
 	for _, a := range release.Assets {
-		expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", config.PackageName, latestVersion)
+		expectedName := fmt.Sprintf("%s-%s-linux-arm.tar.gz", cfg.PackageName, latestVersion)
 		if expectedName == *a.Name {
 			log.Println(fmt.Sprintf("Installing release %s", *a.Name))
-			err := installRelease(config.PackageName, *a.Name, *a.BrowserDownloadURL)
+			err := installRelease(cfg.PackageName, *a.Name, *a.BrowserDownloadURL)
 			if err != nil {
 				return err
 			}
@@ -388,6 +384,7 @@ func installRelease(packageName string, releaseName string, url string) error {
 		return fmt.Errorf("changing file mode for %s: %s", packageBinaryOutputPath, err)
 	}
 
+	// sudo systemctl enable pi-sensor.service
 	_, err = exec.Command("systemctl", "daemon-reload").Output()
 	if err != nil {
 		return fmt.Errorf("%s", err)
@@ -447,8 +444,8 @@ func evalTemplate(templateFile string, outputPath string, i interface{}) error {
 	return nil
 }
 
-func getLatestVersion(config Config) (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", config.RepoName), nil)
+func getLatestVersion(cfg config.Config) (string, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", cfg.RepoName), nil)
 	if err != nil {
 		return "", err
 	}
@@ -494,9 +491,9 @@ func writeCurrentVersion(version string) error {
 	return nil
 }
 
-func checkForUpdates(config Config) error {
+func checkForUpdates(cfg config.Config) error {
 	log.Println("Checking for updates")
-	latestVersion, err := getLatestVersion(config)
+	latestVersion, err := getLatestVersion(cfg)
 	if err != nil {
 		return fmt.Errorf("getting latest version: %s", err)
 	}
@@ -506,7 +503,7 @@ func checkForUpdates(config Config) error {
 	}
 	if latestVersion != currentVersion {
 		log.Println(fmt.Sprintf("New version available. Current version: %s, latest version: %s", currentVersion, latestVersion))
-		err := updateApp(config, latestVersion)
+		err := updateApp(cfg, latestVersion)
 		if err != nil {
 			return fmt.Errorf("updating app: %s", err)
 		}
