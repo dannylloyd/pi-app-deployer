@@ -18,6 +18,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/heroku"
 	"github.com/robfig/cron/v3"
@@ -55,7 +56,7 @@ type Manifest struct {
 }
 
 func main() {
-	setUpdateInProgress(false)
+	file.SetUpdateInProgress(false)
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
 	packageName := flag.String("package-name", "", "Package name to install")
 	pollPeriodMin := flag.Int64("poll-period-min", defaultPollPeriodMin, "Number of minutes between polling for new version")
@@ -127,12 +128,12 @@ func main() {
 		cronLib = cron.New()
 		cronLib.AddFunc(cronSpec, func() {
 			if !updateInProgress() {
-				setUpdateInProgress(true)
+				file.SetUpdateInProgress(true)
 				err := checkForUpdates(ghClient, cfg)
 				if err != nil {
 					log.Println("Error checking for updates:", err)
 				}
-				setUpdateInProgress(false)
+				file.SetUpdateInProgress(false)
 			}
 		})
 		cronLib.Start()
@@ -148,22 +149,6 @@ func updateInProgress() bool {
 		return false
 	}
 	return true
-}
-
-func setUpdateInProgress(inProgress bool) error {
-	if inProgress {
-		f, err := os.Create(progressFile)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-	} else {
-		err := os.Remove(progressFile)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func getManifest(path string) (Manifest, error) {
