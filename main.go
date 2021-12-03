@@ -127,7 +127,7 @@ func main() {
 		var cronLib *cron.Cron
 		cronLib = cron.New()
 		cronLib.AddFunc(cronSpec, func() {
-			if !updateInProgress() {
+			if !file.UpdateInProgress() {
 				file.SetUpdateInProgress(true)
 				err := checkForUpdates(ghClient, cfg)
 				if err != nil {
@@ -141,14 +141,6 @@ func main() {
 		go forever()
 		select {} // block forever
 	}
-}
-
-func updateInProgress() bool {
-	_, err := os.Stat(progressFile)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
 }
 
 func getManifest(path string) (Manifest, error) {

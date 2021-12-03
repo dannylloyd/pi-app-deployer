@@ -26,3 +26,11 @@ func SetUpdateInProgress(inProgress bool) error {
 	}
 	return nil
 }
+
+func UpdateInProgress() bool {
+	_, err := os.Stat(progressFile)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
