@@ -68,6 +68,6 @@ Use the following arguments with the script `./pi-app-updater --repo-name <repo-
 
 
 ## TODO
-- refactor with readable packages
 - uninstall
-- various cleanup
+- refactor
+- package functions need improvement
