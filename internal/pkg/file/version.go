@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-const (
-	defaultVersionFile = "/home/pi/.version"
-)
-
 type VersionTool struct {
 	TestMode    bool
 	VersionFile string
@@ -23,7 +19,7 @@ func NewVersionTool(testMode bool, packageName string) VersionTool {
 	if testMode {
 		v.VersionFile = fmt.Sprintf("./.%s.version", packageName)
 	} else {
-		v.VersionFile = defaultVersionFile
+		v.VersionFile = fmt.Sprintf("/home/pi/.%s.version", packageName)
 	}
 	return v
 }
