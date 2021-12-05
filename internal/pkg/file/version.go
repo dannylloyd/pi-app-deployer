@@ -16,12 +16,12 @@ type VersionTool struct {
 	VersionFile string
 }
 
-func NewVersionTool(testMode bool) VersionTool {
+func NewVersionTool(testMode bool, packageName string) VersionTool {
 	v := VersionTool{
 		TestMode: testMode,
 	}
 	if testMode {
-		v.VersionFile = "./.version"
+		v.VersionFile = fmt.Sprintf("./.%s.version", packageName)
 	} else {
 		v.VersionFile = defaultVersionFile
 	}

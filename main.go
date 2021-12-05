@@ -53,7 +53,7 @@ func main() {
 		PackageName: *packageName,
 	}
 
-	vTool := file.NewVersionTool(testMode)
+	vTool := file.NewVersionTool(testMode, *packageName)
 	ghClient := github.NewClient(cfg)
 	sdTool := file.NewSystemdTool(testMode, cfg)
 
