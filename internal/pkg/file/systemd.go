@@ -15,8 +15,9 @@ const (
 )
 
 type SystemdTool struct {
-	UnitPath string
-	UnitName string
+	UnitPath    string
+	UnitName    string
+	UpdaterPath string
 }
 
 func NewSystemdTool(testMode bool, cfg config.Config) SystemdTool {
@@ -60,7 +61,7 @@ func (s SystemdTool) FindApiKeyFromSystemd() (string, error) {
 	return split[2], nil
 }
 
-func (s SystemdTool) SetupSystemdUnit() error {
+func (s SystemdTool) SetupSystemdUnits() error {
 	_, err := exec.Command("systemctl", "daemon-reload").Output()
 	if err != nil {
 		return fmt.Errorf("%s", err)
@@ -68,8 +69,14 @@ func (s SystemdTool) SetupSystemdUnit() error {
 
 	_, err = exec.Command("systemctl", "start", s.UnitName).Output()
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("starting %s systemd unit: %s", s.UnitName, err)
 	}
+
+	_, err = exec.Command("systemctl", "start", "pi-app-updater").Output()
+	if err != nil {
+		return fmt.Errorf("starting pi-app-updater systemd unit: %s", err)
+	}
+
 	return nil
 }
 

@@ -13,12 +13,17 @@ var runScriptTemplate string
 //go:embed templates/service.tmpl
 var serviceTemplate string
 
+//go:embed templates/pi-app-updater.tmpl
+var updaterTemplate string
+
 type TemplateData struct {
 	Name          string
 	Keys          []string
 	NewLine       string
 	HerokuAPIKey  string
 	HerokuAppName string
+	RepoName      string
+	PackageName   string
 }
 
 func EvalRunScriptTemplate(outputPath string, d TemplateData) error {
@@ -27,6 +32,10 @@ func EvalRunScriptTemplate(outputPath string, d TemplateData) error {
 
 func EvalServiceTemplate(outputPath string, d TemplateData) error {
 	return evalTemplate(serviceTemplate, outputPath, d)
+}
+
+func EvalUpdaterTemplate(outputPath string, d TemplateData) error {
+	return evalTemplate(updaterTemplate, outputPath, d)
 }
 
 func evalTemplate(templateFile string, outputPath string, d TemplateData) error {

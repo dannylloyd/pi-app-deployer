@@ -3,3 +3,4 @@
 .DS_Store
 pi-app-updater
 util.sh
+*.version

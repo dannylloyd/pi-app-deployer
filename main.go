@@ -74,7 +74,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = installRelease(cfg.PackageName, latest.AssetDownloadURL, sdTool)
+		err = installRelease(cfg, latest.AssetDownloadURL, sdTool)
 		if err != nil {
 			log.Println(fmt.Errorf("error installing app: %s", err))
 			os.Exit(1)
@@ -91,7 +91,7 @@ func main() {
 		if testMode {
 			cronSpec = fmt.Sprintf("@every %ds", defaultTestPollPeriodSec)
 		} else {
-			cronSpec = fmt.Sprintf("@every %dm", pollPeriodMin)
+			cronSpec = fmt.Sprintf("@every %dm", *pollPeriodMin)
 		}
 
 		var cronLib *cron.Cron
@@ -113,8 +113,8 @@ func main() {
 	}
 }
 
-func installRelease(packageName string, url string, sdTool file.SystemdTool) error {
-	dlDir := file.DownloadDirectory(packageName)
+func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) error {
+	dlDir := file.DownloadDirectory(cfg.PackageName)
 	err := file.DownloadExtract(url, dlDir)
 	if err != nil {
 		return fmt.Errorf("downloading and extracting release: %s", err)
@@ -149,11 +149,13 @@ func installRelease(packageName string, url string, sdTool file.SystemdTool) err
 	}
 
 	data := file.TemplateData{
-		Name:          packageName,
+		Name:          cfg.PackageName,
 		Keys:          make([]string, 0),
 		NewLine:       "\n",
 		HerokuAPIKey:  apiKey,
 		HerokuAppName: m.Heroku.App,
+		RepoName:      cfg.RepoName,
+		PackageName:   cfg.PackageName,
 	}
 
 	for _, v := range m.Heroku.Env {
@@ -162,16 +164,22 @@ func installRelease(packageName string, url string, sdTool file.SystemdTool) err
 		}
 	}
 
-	runScriptFile := fmt.Sprintf("run-%s.sh", packageName)
+	runScriptFile := fmt.Sprintf("run-%s.sh", cfg.PackageName)
 	runScriptOutputPath := fmt.Sprintf("%s/%s", dlDir, runScriptFile)
 	err = file.EvalRunScriptTemplate(runScriptOutputPath, data)
 	if err != nil {
 		return err
 	}
 
-	serviceFile := fmt.Sprintf("%s.service", packageName)
+	serviceFile := fmt.Sprintf("%s.service", cfg.PackageName)
 	serviceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, serviceFile)
 	err = file.EvalServiceTemplate(serviceFileOutputPath, data)
+	if err != nil {
+		return err
+	}
+
+	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
+	err = file.EvalUpdaterTemplate(updaterServiceFileOutputPath, data)
 	if err != nil {
 		return err
 	}
@@ -181,12 +189,13 @@ func installRelease(packageName string, url string, sdTool file.SystemdTool) err
 		return nil
 	}
 
-	packageBinaryOutputPath := fmt.Sprintf("%s/%s", piUserHomeDir, packageName)
+	packageBinaryOutputPath := fmt.Sprintf("%s/%s", piUserHomeDir, cfg.PackageName)
 
 	var srdDestMap = map[string]string{
-		serviceFileOutputPath:                    sdTool.UnitPath,
-		runScriptOutputPath:                      fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
-		fmt.Sprintf("%s/%s", dlDir, packageName): packageBinaryOutputPath,
+		serviceFileOutputPath:                        sdTool.UnitPath,
+		runScriptOutputPath:                          fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
+		fmt.Sprintf("%s/%s", dlDir, cfg.PackageName): packageBinaryOutputPath,
+		updaterServiceFileOutputPath:                 "/etc/systemd/system/pi-app-updater.service",
 	}
 
 	err = file.CopyWithOwnership(srdDestMap)
@@ -199,7 +208,7 @@ func installRelease(packageName string, url string, sdTool file.SystemdTool) err
 		return err
 	}
 
-	err = sdTool.SetupSystemdUnit()
+	err = sdTool.SetupSystemdUnits()
 	if err != nil {
 		return err
 	}
@@ -232,7 +241,7 @@ func checkForUpdates(ghClient github.GithubClient, vTool file.VersionTool, sdToo
 		}
 		os.Setenv("HEROKU_API_KEY", apiKey)
 
-		err = installRelease(cfg.PackageName, latest.AssetDownloadURL, sdTool)
+		err = installRelease(cfg, latest.AssetDownloadURL, sdTool)
 		if err != nil {
 			return fmt.Errorf("updating app: %s", err)
 		}
