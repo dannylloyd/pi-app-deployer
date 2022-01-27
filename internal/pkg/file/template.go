@@ -31,6 +31,7 @@ func EvalRunScriptTemplate(outputPath string, d TemplateData) error {
 }
 
 func EvalServiceTemplate(outputPath string, d TemplateData) error {
+	// todo: expose certain fields to add/overwrite in systemd unit
 	return evalTemplate(serviceTemplate, outputPath, d)
 }
 

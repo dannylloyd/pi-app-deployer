@@ -159,7 +159,9 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 	}
 
 	for _, v := range m.Heroku.Env {
-		if envVars[v] != "" {
+		if envVars[v] == "" {
+			fmt.Println(fmt.Sprintf("Env var '%s' declared in manifest, but is not set in Heroku config vars", v))
+		} else {
 			data.Keys = append(data.Keys, v)
 		}
 	}
@@ -178,11 +180,11 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 		return err
 	}
 
-	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
-	err = file.EvalUpdaterTemplate(updaterServiceFileOutputPath, data)
-	if err != nil {
-		return err
-	}
+	// updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
+	// err = file.EvalUpdaterTemplate(updaterServiceFileOutputPath, data)
+	// if err != nil {
+	// 	return err
+	// }
 
 	if testMode {
 		fmt.Println("Test mode, not moving files")
@@ -195,7 +197,6 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 		serviceFileOutputPath:                        sdTool.UnitPath,
 		runScriptOutputPath:                          fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
 		fmt.Sprintf("%s/%s", dlDir, cfg.PackageName): packageBinaryOutputPath,
-		updaterServiceFileOutputPath:                 "/etc/systemd/system/pi-app-updater.service",
 	}
 
 	err = file.CopyWithOwnership(srdDestMap)

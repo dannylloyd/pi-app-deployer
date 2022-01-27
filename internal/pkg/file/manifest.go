@@ -13,6 +13,22 @@ type Manifest struct {
 		App string   `yaml:"app"`
 		Env []string `yaml:"env"`
 	} `yaml:"heroku"`
+	Systemd struct {
+		Unit    SystemdUnit    `yaml:"Unit"`
+		Service SystemdService `yaml:"Service"`
+	} `yaml:"systemd"`
+}
+
+type SystemdUnit struct {
+	Description string `yaml:"Description"`
+	After       string `yaml:"After"`
+	Requires    string `yaml:"Requires"`
+}
+
+type SystemdService struct {
+	TimeoutStartSec int    `yaml:"TimeoutStartSec"`
+	Restart         string `yaml:"Restart"`
+	RestartSec      string `yaml:"RestartSec"`
 }
 
 func GetManifest(path string) (Manifest, error) {
