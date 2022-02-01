@@ -47,8 +47,6 @@ type UpdaterTemplateData struct {
 func EvalServiceTemplate(outputPath string, m manifest.Manifest, herokuAPIKey string) error {
 	d := ServiceTemplateData{
 		Description:     m.Systemd.Unit.Description,
-		After:           "",
-		Requires:        "",
 		ExecStart:       getExecStartName(m),
 		TimeoutStartSec: m.Systemd.Service.TimeoutStartSec,
 		Restart:         m.Systemd.Service.Restart,
