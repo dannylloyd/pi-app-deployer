@@ -72,3 +72,4 @@ Use the following arguments with the script `./pi-app-updater --repo-name <repo-
 - refactor
 - package functions need improvement
 - add suppport for open validation
+    - allow anyone using this repo to add a PR check validating their manifest is correct
