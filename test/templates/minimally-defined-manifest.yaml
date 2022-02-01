@@ -1,0 +1,3 @@
+name: sample-app
+heroku:
+  app: sample-app-test

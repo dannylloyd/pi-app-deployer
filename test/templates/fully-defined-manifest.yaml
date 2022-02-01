@@ -1,0 +1,18 @@
+name: sample-app
+heroku:
+  app: sample-app-test
+  env:
+    - CLOUDMQTT_URL
+    - LOG_LEVEL
+systemd:
+  Unit:
+    Description: Sample App
+    After:
+    - a.service
+    - b.service
+    Requires:
+    - c.service
+  Service:
+    TimeoutStartSec: 7
+    Restart: always
+    RestartSec: 23
