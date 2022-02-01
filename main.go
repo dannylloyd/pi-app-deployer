@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
@@ -120,7 +121,7 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 		return fmt.Errorf("downloading and extracting release: %s", err)
 	}
 
-	m, err := file.GetManifest(fmt.Sprintf("%s/.pi-app-updater.yaml", dlDir))
+	m, err := manifest.GetManifest(fmt.Sprintf("%s/.pi-app-updater.yaml", dlDir))
 	if err != nil {
 		return fmt.Errorf("getting manifest: %s", err)
 	}
@@ -139,47 +140,28 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 		apiKey = apiKeyEnv
 	}
 
+	// svcTmplData := file.NewServiceTemplateData(m, apiKey)
+	serviceFile := fmt.Sprintf("%s.service", cfg.PackageName)
+	serviceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, serviceFile)
+	err = file.EvalServiceTemplate(serviceFileOutputPath, m, apiKey)
+	if err != nil {
+		return err
+	}
+
 	hClient, err := heroku.NewClient(m.Heroku.App, apiKey)
 	if err != nil {
 		return err
 	}
-	envVars, err := hClient.GetEnv()
-	if err != nil {
-		return fmt.Errorf("getting env from heroku: %s", err)
-	}
-
-	data := file.TemplateData{
-		Name:          cfg.PackageName,
-		Keys:          make([]string, 0),
-		NewLine:       "\n",
-		HerokuAPIKey:  apiKey,
-		HerokuAppName: m.Heroku.App,
-		RepoName:      cfg.RepoName,
-		PackageName:   cfg.PackageName,
-	}
-
-	for _, v := range m.Heroku.Env {
-		if envVars[v] != "" {
-			data.Keys = append(data.Keys, v)
-		}
-	}
 
 	runScriptFile := fmt.Sprintf("run-%s.sh", cfg.PackageName)
 	runScriptOutputPath := fmt.Sprintf("%s/%s", dlDir, runScriptFile)
-	err = file.EvalRunScriptTemplate(runScriptOutputPath, data)
-	if err != nil {
-		return err
-	}
-
-	serviceFile := fmt.Sprintf("%s.service", cfg.PackageName)
-	serviceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, serviceFile)
-	err = file.EvalServiceTemplate(serviceFileOutputPath, data)
+	err = file.EvalRunScriptTemplate(runScriptOutputPath, m, hClient)
 	if err != nil {
 		return err
 	}
 
 	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
-	err = file.EvalUpdaterTemplate(updaterServiceFileOutputPath, data)
+	err = file.EvalUpdaterTemplate(updaterServiceFileOutputPath, cfg)
 	if err != nil {
 		return err
 	}
@@ -195,7 +177,6 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 		serviceFileOutputPath:                        sdTool.UnitPath,
 		runScriptOutputPath:                          fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
 		fmt.Sprintf("%s/%s", dlDir, cfg.PackageName): packageBinaryOutputPath,
-		updaterServiceFileOutputPath:                 "/etc/systemd/system/pi-app-updater.service",
 	}
 
 	err = file.CopyWithOwnership(srdDestMap)

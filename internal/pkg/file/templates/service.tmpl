@@ -1,18 +1,20 @@
 [Unit]
-Description=<<.Name>>
-After=network.target
+Description=<<.Description>>
+After=<<.After>>
+Requires=<<.Requires>>
 StartLimitInterval=300
 StartLimitBurst=10
 
 [Install]
 WantedBy=multi-user.target
-
+StandardOutput=inherit
 [Service]
-ExecStart=/home/pi/run-<<.Name>>.sh
+ExecStart=<<.ExecStart>>
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
 StandardError=inherit
-Restart=always
-RestartSec=30
+TimeoutStartSec=<<.TimeoutStartSec>>
+Restart=<<.Restart>>
+RestartSec=<<.RestartSec>>
 User=pi
-Environment=HEROKU_API_KEY=<< .HerokuAPIKey >>
+Environment=HEROKU_API_KEY=<<.HerokuAPIKey>>

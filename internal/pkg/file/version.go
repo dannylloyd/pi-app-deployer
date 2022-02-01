@@ -36,7 +36,6 @@ func (v VersionTool) AppInstalled() (bool, error) {
 }
 
 func (v VersionTool) GetCurrentVersion() (string, error) {
-	// TODO use unique name of .version file, like .pi-test.version
 	currentVersionBytes, err := ioutil.ReadFile(v.VersionFile)
 	if err != nil {
 		return "", fmt.Errorf("reading current version from file: %s", err)
