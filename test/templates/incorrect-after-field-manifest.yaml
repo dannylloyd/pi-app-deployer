@@ -1,0 +1,10 @@
+name: sample-app
+heroku:
+  app: sample-app-test
+  env:
+    - CLOUDMQTT_URL
+    - LOG_LEVEL
+systemd:
+  Unit:
+    Description: Sample App
+    After: a.service

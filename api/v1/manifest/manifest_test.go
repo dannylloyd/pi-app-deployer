@@ -23,7 +23,7 @@ func Test_FullyDefinedManifest(t *testing.T) {
 	assert.Equal(t, 23, m.Systemd.Service.RestartSec)
 }
 
-func Test_FullyDefaults(t *testing.T) {
+func Test_Defaults(t *testing.T) {
 	m, err := GetManifest("../../../test/templates/minimally-defined-manifest.yaml")
 	if err != nil {
 		t.Error("getting fully defined manifest should not err, got ", err)
@@ -38,4 +38,19 @@ func Test_FullyDefaults(t *testing.T) {
 	assert.Equal(t, 0, m.Systemd.Service.TimeoutStartSec)
 	assert.Equal(t, "on-failure", m.Systemd.Service.Restart)
 	assert.Equal(t, 5, m.Systemd.Service.RestartSec)
+}
+
+func Test_IncorrectType(t *testing.T) {
+	_, err := GetManifest("../../../test/templates/incorrect-after-field-manifest.yaml")
+	if err == nil {
+		t.Error("getting manifest should err, got ", err)
+	}
+	assert.EqualError(t, err, "unmarshalling manifest yaml file: yaml: unmarshal errors:\n  line 10: cannot unmarshal !!str `a.service` into []string ")
+}
+
+func Test_MissingField(t *testing.T) {
+	_, err := GetManifest("../../../test/templates/missing-field-manifest.yaml")
+
+	assert.NotNil(t, err, "getting manifest should return err")
+	assert.EqualError(t, err, "unmarshalling manifest yaml file: 2 errors occurred:\n\t* name field is required\n\t* heroku.app field is required\n\n ")
 }

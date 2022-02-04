@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/hashicorp/go-multierror"
 	"gopkg.in/yaml.v2"
 )
 
@@ -68,6 +69,20 @@ func (m *Manifest) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type plain Manifest
 	if err := unmarshal((*plain)(m)); err != nil {
 		return err
+	}
+
+	var result error
+
+	if m.Name == "" {
+		result = multierror.Append(result, fmt.Errorf("name field is required"))
+	}
+
+	if m.Heroku.App == "" {
+		result = multierror.Append(result, fmt.Errorf("heroku.app field is required"))
+	}
+
+	if result != nil {
+		return result
 	}
 
 	if m.Systemd.Service.Restart == "" {
