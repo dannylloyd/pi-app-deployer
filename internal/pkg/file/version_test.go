@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_A(t *testing.T) {
+func Test_Version(t *testing.T) {
 	packageName := "pi-test"
 	vTool := NewVersionTool(true, packageName)
 
