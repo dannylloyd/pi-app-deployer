@@ -17,7 +17,7 @@ func NewVersionTool(testMode bool, packageName string) VersionTool {
 		TestMode: testMode,
 	}
 	if testMode {
-		v.VersionFile = fmt.Sprintf("./.%s.version", packageName)
+		v.VersionFile = fmt.Sprintf("/tmp/.%s.version", packageName)
 	} else {
 		v.VersionFile = fmt.Sprintf("/home/pi/.%s.version", packageName)
 	}
@@ -53,6 +53,14 @@ func (v VersionTool) WriteCurrentVersion(version string) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (v VersionTool) Cleanup() error {
+	err := os.Remove(v.VersionFile)
+	if err != nil && fmt.Sprintf("remove %s: no such file or directory", v.VersionFile) != err.Error() {
+		return err
 	}
 	return nil
 }
