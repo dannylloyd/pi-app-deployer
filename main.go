@@ -140,12 +140,15 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 		apiKey = apiKeyEnv
 	}
 
-	// svcTmplData := file.NewServiceTemplateData(m, apiKey)
 	serviceFile := fmt.Sprintf("%s.service", cfg.PackageName)
 	serviceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, serviceFile)
-	err = file.EvalServiceTemplate(serviceFileOutputPath, m, apiKey)
+	serviceFileString, err := file.EvalServiceTemplate(m, apiKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("evaluating service template: %s", err)
+	}
+	err = os.WriteFile(serviceFileOutputPath, []byte(serviceFileString), 0644)
+	if err != nil {
+		return fmt.Errorf("writing service file: %s", err)
 	}
 
 	hClient, err := heroku.NewClient(m.Heroku.App, apiKey)
@@ -155,15 +158,23 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 
 	runScriptFile := fmt.Sprintf("run-%s.sh", cfg.PackageName)
 	runScriptOutputPath := fmt.Sprintf("%s/%s", dlDir, runScriptFile)
-	err = file.EvalRunScriptTemplate(runScriptOutputPath, m, hClient)
+	runScriptFileString, err := file.EvalRunScriptTemplate(m, hClient)
 	if err != nil {
 		return err
 	}
+	err = os.WriteFile(runScriptOutputPath, []byte(runScriptFileString), 0644)
+	if err != nil {
+		return fmt.Errorf("writing run script: %s", err)
+	}
 
 	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
-	err = file.EvalUpdaterTemplate(updaterServiceFileOutputPath, cfg)
+	updaterServiceFileString, err := file.EvalUpdaterTemplate(cfg)
 	if err != nil {
 		return err
+	}
+	err = os.WriteFile(updaterServiceFileOutputPath, []byte(updaterServiceFileString), 0644)
+	if err != nil {
+		return fmt.Errorf("writing updater service file: %s", err)
 	}
 
 	if testMode {

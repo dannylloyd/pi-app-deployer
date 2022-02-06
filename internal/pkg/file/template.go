@@ -1,9 +1,9 @@
 package file
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
-	"os"
 	"strings"
 	"text/template"
 
@@ -44,7 +44,7 @@ type UpdaterTemplateData struct {
 	PackageName string
 }
 
-func EvalServiceTemplate(outputPath string, m manifest.Manifest, herokuAPIKey string) error {
+func EvalServiceTemplate(m manifest.Manifest, herokuAPIKey string) (string, error) {
 	d := ServiceTemplateData{
 		Description:     m.Systemd.Unit.Description,
 		ExecStart:       getExecStartName(m),
@@ -63,14 +63,14 @@ func EvalServiceTemplate(outputPath string, m manifest.Manifest, herokuAPIKey st
 		d.Requires += fmt.Sprintf("%s ", a)
 	}
 	d.Requires = strings.Trim(d.Requires, " ")
-	return evalTemplate(serviceTemplate, outputPath, d)
+	return evalTemplate(serviceTemplate, d)
 }
 
-func EvalRunScriptTemplate(outputPath string, m manifest.Manifest, h heroku.HerokuClient) error {
+func EvalRunScriptTemplate(m manifest.Manifest, h heroku.HerokuClient) (string, error) {
 	d := RunScriptTemplateData{}
 	envVars, err := h.GetEnv()
 	if err != nil {
-		return fmt.Errorf("getting env from heroku: %s", err)
+		return "", fmt.Errorf("getting env from heroku: %s", err)
 	}
 
 	envVarKeys := []string{}
@@ -85,32 +85,36 @@ func EvalRunScriptTemplate(outputPath string, m manifest.Manifest, h heroku.Hero
 	d.ExecStart = getExecStartName(m)
 	d.HerokuAppName = m.Heroku.App
 	d.NewLine = "\n"
-	return evalTemplate(runScriptTemplate, outputPath, d)
+	return evalTemplate(runScriptTemplate, d)
 }
 
-func EvalUpdaterTemplate(outputPath string, cfg config.Config) error {
+func EvalUpdaterTemplate(cfg config.Config) (string, error) {
+	if cfg.PackageName == "" {
+		return "", fmt.Errorf("config package name is required")
+	}
+	if cfg.RepoName == "" {
+		return "", fmt.Errorf("config repo name is required")
+	}
 	d := UpdaterTemplateData{
 		PackageName: cfg.PackageName,
 		RepoName:    cfg.RepoName,
 	}
-	return evalTemplate(updaterTemplate, outputPath, d)
+	return evalTemplate(updaterTemplate, d)
 }
 
-func evalTemplate(templateFile string, outputPath string, d interface{}) error {
+func evalTemplate(templateFile string, d interface{}) (string, error) {
 	t, err := template.New("").Delims("<<", ">>").Parse(templateFile)
 	if err != nil {
-		return fmt.Errorf("opening service file: %s", err)
+		return "", fmt.Errorf("opening service file: %s", err)
 	}
 
-	fi, err := os.Create(outputPath)
+	var doc bytes.Buffer
+	err = t.Execute(&doc, d)
 	if err != nil {
-		return fmt.Errorf("opening service file: %s", err)
+		return "", fmt.Errorf("executing template: %s", err)
 	}
-	err = t.Execute(fi, d)
-	if err != nil {
-		return fmt.Errorf("executing template: %s", err)
-	}
-	return nil
+
+	return doc.String(), nil
 }
 
 func getExecStartName(m manifest.Manifest) string {
