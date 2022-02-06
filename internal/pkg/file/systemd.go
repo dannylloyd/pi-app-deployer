@@ -15,9 +15,8 @@ const (
 )
 
 type SystemdTool struct {
-	UnitPath    string
-	UnitName    string
-	UpdaterPath string
+	UnitPath string
+	UnitName string
 }
 
 func NewSystemdTool(testMode bool, cfg config.Config) SystemdTool {
