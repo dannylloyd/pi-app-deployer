@@ -73,3 +73,15 @@ User=root
 
 	assert.Equal(t, expectedServiceFile, serviceFile)
 }
+
+func Test_EvalUpdaterTemplateErrs(t *testing.T) {
+	c := config.Config{}
+	serviceFile, err := EvalUpdaterTemplate(c)
+	assert.Empty(t, serviceFile)
+	expectedErr := `2 errors occurred:
+	* config package name is required
+	* config repo name is required
+
+`
+	assert.Equal(t, err.Error(), expectedErr)
+}

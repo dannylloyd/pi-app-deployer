@@ -10,6 +10,7 @@ import (
 	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/heroku"
+	"github.com/hashicorp/go-multierror"
 )
 
 //go:embed templates/run.tmpl
@@ -89,12 +90,19 @@ func EvalRunScriptTemplate(m manifest.Manifest, h heroku.HerokuClient) (string, 
 }
 
 func EvalUpdaterTemplate(cfg config.Config) (string, error) {
+	var result error
+
 	if cfg.PackageName == "" {
-		return "", fmt.Errorf("config package name is required")
+		result = multierror.Append(result, fmt.Errorf("config package name is required"))
 	}
 	if cfg.RepoName == "" {
-		return "", fmt.Errorf("config repo name is required")
+		result = multierror.Append(result, fmt.Errorf("config repo name is required"))
+
 	}
+	if result != nil {
+		return "", result
+	}
+
 	d := UpdaterTemplateData{
 		PackageName: cfg.PackageName,
 		RepoName:    cfg.RepoName,
