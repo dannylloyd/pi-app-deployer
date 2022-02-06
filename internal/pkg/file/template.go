@@ -40,11 +40,6 @@ type RunScriptTemplateData struct {
 	NewLine       string
 }
 
-type UpdaterTemplateData struct {
-	RepoName    string
-	PackageName string
-}
-
 func EvalServiceTemplate(m manifest.Manifest, herokuAPIKey string) (string, error) {
 	d := ServiceTemplateData{
 		Description:     m.Systemd.Unit.Description,
@@ -103,11 +98,7 @@ func EvalUpdaterTemplate(cfg config.Config) (string, error) {
 		return "", result
 	}
 
-	d := UpdaterTemplateData{
-		PackageName: cfg.PackageName,
-		RepoName:    cfg.RepoName,
-	}
-	return evalTemplate(updaterTemplate, d)
+	return evalTemplate(updaterTemplate, cfg)
 }
 
 func evalTemplate(templateFile string, d interface{}) (string, error) {
