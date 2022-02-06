@@ -85,3 +85,7 @@ func Test_EvalUpdaterTemplateErrs(t *testing.T) {
 `
 	assert.Equal(t, err.Error(), expectedErr)
 }
+
+func Test_EvalRunScriptTemplate(t *testing.T) {
+	// TODO need to have heroku client as interface to implement mock API call
+}
