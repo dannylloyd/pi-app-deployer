@@ -69,19 +69,16 @@ func main() {
 
 		latest, err := ghClient.GetLatestVersion(cfg)
 		if err != nil {
-			log.Println(fmt.Sprintf("error getting latest version from github: %s", err))
-			os.Exit(1)
+			log.Fatalln(fmt.Sprintf("error getting latest version from github: %s", err))
 		}
 
 		err = installRelease(cfg, latest.AssetDownloadURL, sdTool)
 		if err != nil {
-			log.Println(fmt.Errorf("error installing app: %s", err))
-			os.Exit(1)
+			log.Fatalln(fmt.Errorf("error installing app: %s", err))
 		}
 		err = vTool.WriteCurrentVersion(latest.Version)
 		if err != nil {
-			log.Println(fmt.Errorf("writing latest version to file: %s", err))
-			os.Exit(1)
+			log.Fatalln(fmt.Errorf("writing latest version to file: %s", err))
 		}
 		log.Println("Successfully installed app")
 
