@@ -17,11 +17,11 @@ type HerokuRes struct {
 	Message string `json:"message"`
 }
 
-func NewClient(appName string, apiKey string) (HerokuClient, error) {
+func NewClient(appName string, apiKey string) HerokuClient {
 	return HerokuClient{
 		AppName: appName,
 		APIKey:  apiKey,
-	}, nil
+	}
 }
 
 func (c *HerokuClient) GetEnv() (map[string]string, error) {

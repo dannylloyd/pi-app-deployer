@@ -121,9 +121,8 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 		return fmt.Errorf("getting manifest: %s", err)
 	}
 
-	apiKeyEnv := os.Getenv("HEROKU_API_KEY")
-	var apiKey string
-	if apiKeyEnv == "" {
+	apiKey := os.Getenv("HEROKU_API_KEY")
+	if apiKey == "" {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Enter value for Heroku API key: ")
 		apiKey, err = reader.ReadString('\n')
@@ -131,8 +130,6 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 			return err
 		}
 		apiKey = strings.TrimSuffix(apiKey, "\n")
-	} else {
-		apiKey = apiKeyEnv
 	}
 
 	serviceFile := fmt.Sprintf("%s.service", cfg.PackageName)
@@ -146,7 +143,7 @@ func installRelease(cfg config.Config, url string, sdTool file.SystemdTool) erro
 		return fmt.Errorf("writing service file: %s", err)
 	}
 
-	hClient, err := heroku.NewClient(m.Heroku.App, apiKey)
+	hClient := heroku.NewClient(m.Heroku.App, apiKey)
 	if err != nil {
 		return err
 	}
