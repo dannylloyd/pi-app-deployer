@@ -61,12 +61,10 @@ func main() {
 	if *install {
 		installed, err := vTool.AppInstalled()
 		if err != nil {
-			log.Println(fmt.Errorf("checking if app is installed already: %s", err))
-			os.Exit(1)
+			log.Fatalln(fmt.Errorf("checking if app is installed already: %s", err))
 		}
 		if installed {
-			log.Println("App already installed, remove '--install' flag to check for updates")
-			os.Exit(1)
+			log.Fatalln("App already installed, remove '--install' flag to check for updates")
 		}
 
 		latest, err := ghClient.GetLatestVersion(cfg)
