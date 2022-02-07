@@ -52,6 +52,7 @@ func (s SystemdTool) FindApiKeyFromSystemd() (string, error) {
 		return "", err
 	}
 
+	// Expected Systemd env var pattern: Environment=HEROKU_API_KEY=<api-key>
 	split := strings.Split(keyLineString, "=")
 	if len(split) != 3 {
 		return "", fmt.Errorf("expected systemd file heroku api key line to have length 3")
