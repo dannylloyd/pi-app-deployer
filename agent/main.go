@@ -12,9 +12,7 @@ import (
 	"github.com/andrewmarklloyd/pi-app-updater-server/internal/pkg/mqtt"
 )
 
-const pushTopic = "repo/push"
-
-var logger = log.New(os.Stdout, "[Pi-App-Updater-Server] ", log.LstdFlags)
+var logger = log.New(os.Stdout, "[Pi-App-Updater-Agent] ", log.LstdFlags)
 
 func main() {
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
@@ -32,11 +30,11 @@ func main() {
 	}
 
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
-	client.Subscribe(pushTopic, func(message string) {
+	client.Subscribe(config.RepoPushTopic, func(message string) {
 		var payload config.UpdaterPayload
 		err := json.Unmarshal([]byte(message), &payload)
 		if err != nil {
-			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", pushTopic, err))
+			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
 		} else {
 			if payload.Repository == cfg.RepoName {
 				handleRepoUpdate(payload)
@@ -49,7 +47,7 @@ func main() {
 }
 
 func handleRepoUpdate(payload config.UpdaterPayload) {
-	logger.Println(fmt.Sprintf("Received message on topic %s: %s", pushTopic, payload))
+	logger.Println(fmt.Sprintf("Received message on topic %s: %s", config.RepoPushTopic, payload))
 }
 
 func forever() {

@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/andrewmarklloyd/pi-app-updater-server/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-updater-server/internal/pkg/mqtt"
 	gmux "github.com/gorilla/mux"
 
 	"github.com/google/go-github/v42/github"
@@ -22,14 +24,7 @@ var backoffSchedule = []time.Duration{
 	60 * time.Second,
 }
 
-var messageClient mqttClient
-
-type UpdaterPayload struct {
-	SHA                string `json:"sha"`
-	Repository         string `json:"repository"`
-	ArtifactName       string `json:"artifact_name"`
-	ArchiveDownloadURL string `json:"archive_download_url"`
-}
+var messageClient mqtt.MqttClient
 
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	payload, err := ioutil.ReadAll(r.Body)
@@ -39,7 +34,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var updaterPayload UpdaterPayload
+	var updaterPayload config.UpdaterPayload
 	err = json.Unmarshal(payload, &updaterPayload)
 	if err != nil {
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
@@ -62,12 +57,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	updaterPayload.ArchiveDownloadURL = url
 	json, _ := json.Marshal(updaterPayload)
 
-	messageClient.PublishPushTopic(string(json))
+	messageClient.Publish(config.RepoPushTopic, string(json))
 
 	fmt.Fprintf(w, "{\"status\":\"success\"}")
 }
 
-func processDeployMessage(up UpdaterPayload) (string, error) {
+func processDeployMessage(up config.UpdaterPayload) (string, error) {
 	url, err := getDownloadURLWithRetries(up)
 	if err != nil {
 		return "", err
@@ -75,7 +70,7 @@ func processDeployMessage(up UpdaterPayload) (string, error) {
 	return url, nil
 }
 
-func getDownloadURLWithRetries(updaterPayload UpdaterPayload) (string, error) {
+func getDownloadURLWithRetries(updaterPayload config.UpdaterPayload) (string, error) {
 	var err error
 	var url string
 	for _, backoff := range backoffSchedule {
@@ -93,7 +88,7 @@ func getDownloadURLWithRetries(updaterPayload UpdaterPayload) (string, error) {
 	return "", fmt.Errorf("an unexpected event occurred, no url found and no error returned")
 }
 
-func getDownloadURL(updaterPayload UpdaterPayload) (string, error) {
+func getDownloadURL(updaterPayload config.UpdaterPayload) (string, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/artifacts", updaterPayload.Repository), nil)
 	if err != nil {
 		return "", err
@@ -136,17 +131,7 @@ func main() {
 	url := os.Getenv("CLOUDMQTT_URL")
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, pw, url)
 
-	messageClient = newMQTTClient(mqttAddr)
-	messageClient.SubscribePushTopic(func(message string) {
-		var payload UpdaterPayload
-		err := json.Unmarshal([]byte(message), &payload)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println(fmt.Sprintf("Received message on topic %s: %s", pushTopic, payload))
-		}
-
-	})
+	messageClient = mqtt.NewMQTTClient(mqttAddr, *logger)
 
 	router := gmux.NewRouter().StrictSlash(true)
 	router.Handle("/push", requireLogin(http.HandlerFunc(handleWebhook))).Methods("POST")

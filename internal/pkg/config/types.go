@@ -1,5 +1,9 @@
 package config
 
+const (
+	RepoPushTopic = "repo/push"
+)
+
 type Config struct {
 	RepoName    string
 	PackageName string
