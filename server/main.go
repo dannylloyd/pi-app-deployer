@@ -24,6 +24,8 @@ var backoffSchedule = []time.Duration{
 	60 * time.Second,
 }
 
+var logger = log.New(os.Stdout, "[Pi-App-Updater-Server] ", log.LstdFlags)
+
 var messageClient mqtt.MqttClient
 
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
@@ -42,12 +44,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if updaterPayload.Repository == "" || updaterPayload.ArtifactName == "" || updaterPayload.SHA == "" {
-		fmt.Println("empty field(s) found in payload:", updaterPayload)
+		logger.Println("empty field(s) found in payload:", updaterPayload)
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Println(fmt.Sprintf("Received new artifact published event for repository %s", updaterPayload.Repository))
+	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", updaterPayload.Repository))
 
 	url, err := processDeployMessage(updaterPayload)
 	if err != nil {
@@ -79,7 +81,7 @@ func getDownloadURLWithRetries(updaterPayload config.UpdaterPayload) (string, er
 			return url, nil
 		}
 
-		fmt.Println(fmt.Sprintf("Retrying in %v", backoff))
+		logger.Println(fmt.Sprintf("Retrying in %v", backoff))
 		time.Sleep(backoff)
 	}
 	if err != nil {
