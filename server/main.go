@@ -155,7 +155,7 @@ func main() {
 func requireLogin(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		if !isAuthenticated(req) {
-			fmt.Print("unauthenticated request", req.Header)
+			logger.Println("unauthenticated request", req.Header)
 			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
