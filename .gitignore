@@ -4,3 +4,4 @@
 pi-app-updater
 util.sh
 *.version
+.env
