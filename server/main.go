@@ -59,7 +59,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	updaterPayload.ArchiveDownloadURL = url
 	json, _ := json.Marshal(updaterPayload)
 
-	messageClient.Publish(config.RepoPushTopic, string(json))
+	err = messageClient.Publish(config.RepoPushTopic, string(json))
+	if err != nil {
+		logger.Println(err)
+		http.Error(w, "Error publishing event", http.StatusInternalServerError)
+		return
+	}
 
 	fmt.Fprintf(w, "{\"status\":\"success\"}")
 }

@@ -59,7 +59,8 @@ func (c MqttClient) Subscribe(topic string, subscribeHandler fn) error {
 	return nil
 }
 
-func (c MqttClient) Publish(topic, message string) {
+func (c MqttClient) Publish(topic, message string) error {
 	token := c.client.Publish(topic, 0, false, message)
 	token.Wait()
+	return token.Error()
 }
