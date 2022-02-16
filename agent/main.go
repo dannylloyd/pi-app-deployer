@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/andrewmarklloyd/pi-app-updater-server/internal/pkg/config"
-	"github.com/andrewmarklloyd/pi-app-updater-server/internal/pkg/mqtt"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 )
 
 var logger = log.New(os.Stdout, "[Pi-App-Updater-Agent] ", log.LstdFlags)

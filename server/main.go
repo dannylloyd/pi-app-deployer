@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/andrewmarklloyd/pi-app-updater-server/internal/pkg/config"
-	"github.com/andrewmarklloyd/pi-app-updater-server/internal/pkg/mqtt"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 	gmux "github.com/gorilla/mux"
 
 	"github.com/google/go-github/v42/github"
@@ -59,7 +59,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	updaterPayload.ArchiveDownloadURL = url
 	json, _ := json.Marshal(updaterPayload)
 
-	err = messageClient.Publish(config.RepoPushTopic, string(json))
+	err = messageClient.Publish(config.RepoPushTopic, fmt.Sprintf(`{"payload":%s,"config":{"systemd":"cool-systemd-service-unit","run-script":"great-run-script","pi-app-updater":"awesome-systemd-unit-here"}}`, string(json)))
 	if err != nil {
 		logger.Println(err)
 		http.Error(w, "Error publishing event", http.StatusInternalServerError)

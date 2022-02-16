@@ -1,4 +1,4 @@
-module github.com/andrewmarklloyd/pi-app-updater-server
+module github.com/andrewmarklloyd/pi-app-updater
 
 go 1.16
 
