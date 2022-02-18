@@ -68,7 +68,6 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error rendering templates", http.StatusBadRequest)
 		return
 	}
-	logger.Println(c)
 
 	p := config.AgentPayload{
 		Artifact:    a,
@@ -94,7 +93,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 func renderTemplates(a config.Artifact) (config.ConfigFiles, error) {
 	c := config.ConfigFiles{}
 	// download manifest from repo, render templates
-	// where can I get heroku api key?
+	// where can I get heroku api key? do we really want to send this to agents??
 	// manifest.GetManifest()
 	m := manifest.Manifest{
 		Name: "abc",
@@ -113,6 +112,13 @@ func renderTemplates(a config.Artifact) (config.ConfigFiles, error) {
 		return config.ConfigFiles{}, err
 	}
 	c.Systemd = serviceUnit
+
+	runScript, err := file.EvalRunScriptTemplate(m)
+	if err != nil {
+		return config.ConfigFiles{}, err
+	}
+	c.RunScript = runScript
+
 	return c, nil
 }
 
