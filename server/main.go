@@ -59,12 +59,11 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	a.ArchiveDownloadURL = url
 
-	//
-	templates := config.Templates{}
+	c := renderTemplates()
 
 	p := config.AgentPayload{
-		Artifact:  a,
-		Templates: templates,
+		Artifact:    a,
+		ConfigFiles: c,
 	}
 	json, _ := json.Marshal(p)
 	err = messageClient.Publish(config.RepoPushTopic, string(json))
@@ -75,6 +74,10 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "{\"status\":\"success\"}")
+}
+
+func renderTemplates() config.ConfigFiles {
+	return config.ConfigFiles{}
 }
 
 func getDownloadURLWithRetries(artifact config.Artifact) (string, error) {

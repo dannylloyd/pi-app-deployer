@@ -16,13 +16,13 @@ type Artifact struct {
 	ArchiveDownloadURL string `json:"download_url"`
 }
 
-type Templates struct {
+type ConfigFiles struct {
 	Systemd      string `json:"systemd"`
 	RunScript    string `json:"runScript"`
 	PiAppUpdater string `json:"piAppUpdater"`
 }
 
 type AgentPayload struct {
-	Artifact  Artifact  `json:"artifact"`
-	Templates Templates `json:"templates"`
+	Artifact    Artifact    `json:"artifact"`
+	ConfigFiles ConfigFiles `json:"configFiles"`
 }
