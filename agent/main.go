@@ -37,6 +37,8 @@ func main() {
 		PackageName: *packageName,
 	}
 
+	fmt.Println(cfg)
+
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 	client.Subscribe(config.RepoPushTopic, func(message string) {
 		var payload config.AgentPayload
