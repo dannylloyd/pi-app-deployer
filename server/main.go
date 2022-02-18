@@ -54,18 +54,29 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	url, err := getDownloadURLWithRetries(a)
 	if err != nil {
+		logger.Println(err)
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
 	a.ArchiveDownloadURL = url
 
-	c := renderTemplates()
+	c, err := renderTemplates(a)
+	if err != nil {
+		logger.Println(err)
+		http.Error(w, "Error rendering templates", http.StatusBadRequest)
+		return
+	}
 
 	p := config.AgentPayload{
 		Artifact:    a,
 		ConfigFiles: c,
 	}
-	json, _ := json.Marshal(p)
+	json, err := json.Marshal(p)
+	if err != nil {
+		logger.Println(err)
+		http.Error(w, "an error occurred", http.StatusInternalServerError)
+		return
+	}
 	err = messageClient.Publish(config.RepoPushTopic, string(json))
 	if err != nil {
 		logger.Println(err)
@@ -76,8 +87,8 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{\"status\":\"success\"}")
 }
 
-func renderTemplates() config.ConfigFiles {
-	return config.ConfigFiles{}
+func renderTemplates(a config.Artifact) (config.ConfigFiles, error) {
+	return config.ConfigFiles{}, nil
 }
 
 func getDownloadURLWithRetries(artifact config.Artifact) (string, error) {
