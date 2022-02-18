@@ -31,6 +31,7 @@ func main() {
 
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 	client.Subscribe(config.RepoPushTopic, func(message string) {
+		fmt.Println(message)
 		var payload config.AgentPayload
 		err := json.Unmarshal([]byte(message), &payload)
 		if err != nil {
