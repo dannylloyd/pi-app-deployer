@@ -61,18 +61,9 @@ func EvalServiceTemplate(m manifest.Manifest, herokuAPIKey string) (string, erro
 	return evalTemplate(serviceTemplate, d)
 }
 
-func EvalRunScriptTemplate(m manifest.Manifest, herokuEnvVars map[string]string) (string, error) {
+func EvalRunScriptTemplate(m manifest.Manifest) (string, error) {
 	d := RunScriptTemplateData{}
-
-	envVarKeys := []string{}
-	for _, v := range m.Heroku.Env {
-		if herokuEnvVars[v] == "" {
-			fmt.Println(fmt.Sprintf("Env var '%s' declared in manifest, but is not set in Heroku config vars", v))
-		} else {
-			envVarKeys = append(envVarKeys, v)
-		}
-	}
-	d.EnvVarKeys = envVarKeys
+	d.EnvVarKeys = m.Heroku.Env
 	d.ExecStart = getExecStartName(m)
 	d.HerokuAppName = m.Heroku.App
 	d.NewLine = "\n"

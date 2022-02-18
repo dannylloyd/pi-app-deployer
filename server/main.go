@@ -9,7 +9,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 	gmux "github.com/gorilla/mux"
 
@@ -89,7 +91,28 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderTemplates(a config.Artifact) (config.ConfigFiles, error) {
-	return config.ConfigFiles{}, nil
+	c := config.ConfigFiles{}
+	// download manifest from repo, render templates
+	// where can I get heroku api key?
+	// manifest.GetManifest()
+	m := manifest.Manifest{
+		Name: "abc",
+		Heroku: manifest.Heroku{
+			App: "abc",
+			Env: []string{"HELLO", "WORLD"},
+		},
+		Systemd: manifest.SystemdConfig{
+			Unit: manifest.SystemdUnit{
+				Description: "this is description",
+			},
+		},
+	}
+	serviceUnit, err := file.EvalServiceTemplate(m, "abc")
+	if err != nil {
+		return config.ConfigFiles{}, err
+	}
+	c.Systemd = serviceUnit
+	return c, nil
 }
 
 func getDownloadURLWithRetries(artifact config.Artifact) (string, error) {
