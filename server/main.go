@@ -16,10 +16,6 @@ import (
 	"github.com/google/go-github/v42/github"
 )
 
-const (
-	agentPayload = `{"artifact":%s,"templates":%s}`
-)
-
 var backoffSchedule = []time.Duration{
 	10 * time.Second,
 	15 * time.Second,
@@ -62,12 +58,16 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.ArchiveDownloadURL = url
-	artifactJson, _ := json.Marshal(a)
 
-	t := config.Templates{}
-	templateJson, _ := json.Marshal(t)
+	//
+	templates := config.Templates{}
 
-	err = messageClient.Publish(config.RepoPushTopic, fmt.Sprintf(agentPayload, string(artifactJson), string(templateJson)))
+	p := config.AgentPayload{
+		Artifact:  a,
+		Templates: templates,
+	}
+	json, _ := json.Marshal(p)
+	err = messageClient.Publish(config.RepoPushTopic, string(json))
 	if err != nil {
 		logger.Println(err)
 		http.Error(w, "Error publishing event", http.StatusInternalServerError)

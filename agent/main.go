@@ -31,12 +31,12 @@ func main() {
 
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 	client.Subscribe(config.RepoPushTopic, func(message string) {
-		var payload config.UpdaterPayload
+		var payload config.AgentPayload
 		err := json.Unmarshal([]byte(message), &payload)
 		if err != nil {
 			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
 		} else {
-			if payload.Repository == cfg.RepoName {
+			if payload.Artifact.Repository == cfg.RepoName {
 				handleRepoUpdate(payload)
 			}
 		}
@@ -46,7 +46,7 @@ func main() {
 	select {} // block forever
 }
 
-func handleRepoUpdate(payload config.UpdaterPayload) {
+func handleRepoUpdate(payload config.AgentPayload) {
 	logger.Println(fmt.Sprintf("Received message on topic %s: %s", config.RepoPushTopic, payload))
 }
 

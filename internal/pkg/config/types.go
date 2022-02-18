@@ -21,3 +21,8 @@ type Templates struct {
 	RunScript    string `json:"runScript"`
 	PiAppUpdater string `json:"piAppUpdater"`
 }
+
+type AgentPayload struct {
+	Artifact  Artifact  `json:"artifact"`
+	Templates Templates `json:"templates"`
+}
