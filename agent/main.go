@@ -15,9 +15,17 @@ import (
 var logger = log.New(os.Stdout, "[Pi-App-Updater-Agent] ", log.LstdFlags)
 
 func main() {
+	// todo: support multiple repos and packages
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
 	packageName := flag.String("package-name", "", "Package name to install")
 	flag.Parse()
+
+	if *repoName == "" {
+		logger.Fatalln("repo-name is required")
+	}
+	if *packageName == "" {
+		logger.Fatalln("package-name is required")
+	}
 
 	user := os.Getenv("CLOUDMQTT_AGENT_USER")
 	password := os.Getenv("CLOUDMQTT_AGENT_PASSWORD")
@@ -31,7 +39,6 @@ func main() {
 
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 	client.Subscribe(config.RepoPushTopic, func(message string) {
-		fmt.Println(message)
 		var payload config.AgentPayload
 		err := json.Unmarshal([]byte(message), &payload)
 		if err != nil {

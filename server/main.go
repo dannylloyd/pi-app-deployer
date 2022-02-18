@@ -72,7 +72,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		ConfigFiles: c,
 	}
 	json, err := json.Marshal(p)
-	logger.Println(string(json))
+
 	if err != nil {
 		logger.Println(err)
 		http.Error(w, "an error occurred", http.StatusInternalServerError)
@@ -85,7 +85,6 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Println("successfully published to repo/push")
 	fmt.Fprintf(w, "{\"status\":\"success\"}")
 }
 
