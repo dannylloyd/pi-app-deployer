@@ -119,7 +119,7 @@ func renderTemplates(a config.Artifact) (config.ConfigFiles, error) {
 	if err != nil {
 		return config.ConfigFiles{}, err
 	}
-	c.RunScript = runScript
+	c.RunScript = strings.Replace(runScript, "\n", `\n`, -1)
 
 	return c, nil
 }
