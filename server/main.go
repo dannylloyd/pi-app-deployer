@@ -16,6 +16,10 @@ import (
 	"github.com/google/go-github/v42/github"
 )
 
+const (
+	agentPayload = `{"artifact":%s,"templates":%s}`
+)
+
 var backoffSchedule = []time.Duration{
 	10 * time.Second,
 	15 * time.Second,
@@ -29,37 +33,41 @@ var logger = log.New(os.Stdout, "[Pi-App-Updater-Server] ", log.LstdFlags)
 var messageClient mqtt.MqttClient
 
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
-	payload, err := ioutil.ReadAll(r.Body)
+	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("error reading request body: err=%s\n", err)
 		return
 	}
 	defer r.Body.Close()
 
-	var updaterPayload config.UpdaterPayload
-	err = json.Unmarshal(payload, &updaterPayload)
+	var a config.Artifact
+	err = json.Unmarshal(data, &a)
 	if err != nil {
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
 
-	if updaterPayload.Repository == "" || updaterPayload.ArtifactName == "" || updaterPayload.SHA == "" {
-		logger.Println("empty field(s) found in payload:", updaterPayload)
+	if a.Repository == "" || a.Name == "" || a.SHA == "" {
+		// todo: better error reporting to user
+		logger.Println("empty field(s) found in artifact:", a)
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
 
-	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", updaterPayload.Repository))
+	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", a.Repository))
 
-	url, err := processDeployMessage(updaterPayload)
+	url, err := getDownloadURLWithRetries(a)
 	if err != nil {
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
-	updaterPayload.ArchiveDownloadURL = url
-	json, _ := json.Marshal(updaterPayload)
+	a.ArchiveDownloadURL = url
+	artifactJson, _ := json.Marshal(a)
 
-	err = messageClient.Publish(config.RepoPushTopic, fmt.Sprintf(`{"payload":%s,"config":{"systemd":"cool-systemd-service-unit","run-script":"great-run-script","pi-app-updater":"awesome-systemd-unit-here"}}`, string(json)))
+	t := config.Templates{}
+	templateJson, _ := json.Marshal(t)
+
+	err = messageClient.Publish(config.RepoPushTopic, fmt.Sprintf(agentPayload, string(artifactJson), string(templateJson)))
 	if err != nil {
 		logger.Println(err)
 		http.Error(w, "Error publishing event", http.StatusInternalServerError)
@@ -69,19 +77,11 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{\"status\":\"success\"}")
 }
 
-func processDeployMessage(up config.UpdaterPayload) (string, error) {
-	url, err := getDownloadURLWithRetries(up)
-	if err != nil {
-		return "", err
-	}
-	return url, nil
-}
-
-func getDownloadURLWithRetries(updaterPayload config.UpdaterPayload) (string, error) {
+func getDownloadURLWithRetries(artifact config.Artifact) (string, error) {
 	var err error
 	var url string
 	for _, backoff := range backoffSchedule {
-		url, err = getDownloadURL(updaterPayload)
+		url, err = getDownloadURL(artifact)
 		if url != "" {
 			return url, nil
 		}
@@ -95,8 +95,8 @@ func getDownloadURLWithRetries(updaterPayload config.UpdaterPayload) (string, er
 	return "", fmt.Errorf("an unexpected event occurred, no url found and no error returned")
 }
 
-func getDownloadURL(updaterPayload config.UpdaterPayload) (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/artifacts", updaterPayload.Repository), nil)
+func getDownloadURL(artifact config.Artifact) (string, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/artifacts", artifact.Repository), nil)
 	if err != nil {
 		return "", err
 	}
@@ -120,12 +120,12 @@ func getDownloadURL(updaterPayload config.UpdaterPayload) (string, error) {
 	}
 
 	for _, a := range artifacts.Artifacts {
-		if updaterPayload.ArtifactName == a.GetName() {
+		if artifact.Name == a.GetName() {
 			return a.GetArchiveDownloadURL(), nil
 		}
 	}
 
-	return "", fmt.Errorf("no artifact found for %s", updaterPayload.ArtifactName)
+	return "", fmt.Errorf("no artifact found for %s", artifact.Name)
 }
 
 func main() {

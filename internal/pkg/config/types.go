@@ -9,9 +9,15 @@ type Config struct {
 	PackageName string
 }
 
-type UpdaterPayload struct {
+type Artifact struct {
 	SHA                string `json:"sha"`
 	Repository         string `json:"repository"`
-	ArtifactName       string `json:"artifact_name"`
-	ArchiveDownloadURL string `json:"archive_download_url"`
+	Name               string `json:"name"`
+	ArchiveDownloadURL string `json:"download_url"`
+}
+
+type Templates struct {
+	Systemd      string `json:"systemd"`
+	RunScript    string `json:"runScript"`
+	PiAppUpdater string `json:"piAppUpdater"`
 }
