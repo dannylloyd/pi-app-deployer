@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 )
 
@@ -55,7 +56,12 @@ func main() {
 }
 
 func handleRepoUpdate(payload config.AgentPayload) {
-	logger.Println(fmt.Sprintf("Received message on topic %s: %s", config.RepoPushTopic, payload))
+	logger.Println(fmt.Sprintf("Received message on topic %s:", config.RepoPushTopic))
+	runScript := file.FromJSONCompliant(payload.ConfigFiles.RunScript)
+	logger.Println(runScript)
+
+	systemd := file.FromJSONCompliant(payload.ConfigFiles.Systemd)
+	logger.Println(systemd)
 }
 
 func forever() {

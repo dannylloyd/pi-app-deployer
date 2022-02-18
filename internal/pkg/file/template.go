@@ -105,3 +105,11 @@ func evalTemplate(templateFile string, d interface{}) (string, error) {
 func getExecStartName(m manifest.Manifest) string {
 	return fmt.Sprintf("/home/pi/run-%s.sh", m.Name)
 }
+
+func FromJSONCompliant(fileWithNewlines string) string {
+	return strings.Replace(fileWithNewlines, `\n`, "\n", -1)
+}
+
+func ToJSONCompliant(fileRendered string) string {
+	return strings.Replace(fileRendered, "\n", `\n`, -1)
+}

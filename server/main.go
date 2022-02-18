@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
@@ -113,13 +112,13 @@ func renderTemplates(a config.Artifact) (config.ConfigFiles, error) {
 		return config.ConfigFiles{}, err
 	}
 
-	c.Systemd = strings.Replace(serviceUnit, "\n", `\n`, -1)
+	c.Systemd = file.ToJSONCompliant(serviceUnit)
 
 	runScript, err := file.EvalRunScriptTemplate(m)
 	if err != nil {
 		return config.ConfigFiles{}, err
 	}
-	c.RunScript = strings.Replace(runScript, "\n", `\n`, -1)
+	c.RunScript = file.ToJSONCompliant(runScript)
 
 	return c, nil
 }
