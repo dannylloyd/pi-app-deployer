@@ -68,6 +68,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error rendering templates", http.StatusBadRequest)
 		return
 	}
+	logger.Println(c)
 
 	p := config.AgentPayload{
 		Artifact:    a,
