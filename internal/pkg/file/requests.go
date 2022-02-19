@@ -70,7 +70,6 @@ func RenderTemplates(m manifest.Manifest) (config.ConfigFiles, error) {
 
 	err = json.Unmarshal(data, &c)
 
-	fmt.Println(c)
 	return c, nil
 }
 
