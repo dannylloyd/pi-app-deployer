@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 )
 
@@ -40,13 +39,13 @@ func main() {
 
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 	client.Subscribe(config.RepoPushTopic, func(message string) {
-		var payload config.AgentPayload
-		err := json.Unmarshal([]byte(message), &payload)
+		var artifact config.Artifact
+		err := json.Unmarshal([]byte(message), &artifact)
 		if err != nil {
 			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
 		} else {
-			if payload.Artifact.Repository == cfg.RepoName {
-				handleRepoUpdate(payload)
+			if artifact.Repository == cfg.RepoName {
+				handleRepoUpdate(artifact)
 			}
 		}
 	})
@@ -55,13 +54,9 @@ func main() {
 	select {} // block forever
 }
 
-func handleRepoUpdate(payload config.AgentPayload) {
+func handleRepoUpdate(artifact config.Artifact) {
 	logger.Println(fmt.Sprintf("Received message on topic %s:", config.RepoPushTopic))
-	runScript := file.FromJSONCompliant(payload.ConfigFiles.RunScript)
-	logger.Println(runScript)
-
-	systemd := file.FromJSONCompliant(payload.ConfigFiles.Systemd)
-	logger.Println(systemd)
+	logger.Println(artifact)
 }
 
 func forever() {

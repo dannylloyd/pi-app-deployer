@@ -62,18 +62,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	a.ArchiveDownloadURL = url
 
-	c, err := renderTemplates(a)
-	if err != nil {
-		logger.Println(err)
-		http.Error(w, "Error rendering templates", http.StatusBadRequest)
-		return
-	}
-
-	p := config.AgentPayload{
-		Artifact:    a,
-		ConfigFiles: c,
-	}
-	json, err := json.Marshal(p)
+	json, err := json.Marshal(a)
 
 	if err != nil {
 		logger.Println(err)
