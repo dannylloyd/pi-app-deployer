@@ -99,6 +99,6 @@ func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.RunScript = file.ToJSONCompliant(runScript)
-
-	// return c, nil
+	body, _ := json.Marshal(m)
+	fmt.Fprintf(w, string(body))
 }
