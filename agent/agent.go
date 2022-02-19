@@ -35,7 +35,6 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
 	if err != nil {
 		return fmt.Errorf("getting manifest from directory %s: %s", dlDir, err)
 	}
-	fmt.Println(m)
 
 	err = file.RenderTemplates(m)
 	if err != nil {

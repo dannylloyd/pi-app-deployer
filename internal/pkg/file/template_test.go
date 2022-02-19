@@ -13,7 +13,7 @@ func Test_ServiceTemplate(t *testing.T) {
 	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml")
 	assert.NoError(t, err)
 
-	serviceFile, err := EvalServiceTemplate(m, "abcdefg")
+	serviceFile, err := EvalServiceTemplate(m)
 	assert.NoError(t, err)
 
 	expectedServiceFile := `[Unit]
@@ -35,7 +35,7 @@ TimeoutStartSec=7
 Restart=always
 RestartSec=23
 User=pi
-Environment=HEROKU_API_KEY=abcdefg
+Environment=HEROKU_API_KEY={{.HerokuAPIKey}}
 `
 	assert.Equal(t, expectedServiceFile, serviceFile)
 }

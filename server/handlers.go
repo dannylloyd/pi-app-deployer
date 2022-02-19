@@ -65,42 +65,37 @@ func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		logger.Printf("error reading request body: err=%s\n", err)
+		http.Error(w, `{"error":"reading request body"}`, http.StatusInternalServerError)
 		return
 	}
 	defer r.Body.Close()
 
-	logger.Println(string(data))
-}
-
-func renderTemplates(a config.Artifact) (config.ConfigFiles, error) {
-	c := config.ConfigFiles{}
-	// download manifest from repo, render templates
-	// where can I get heroku api key? do we really want to send this to agents??
-	// manifest.GetManifest()
-	m := manifest.Manifest{
-		Name: "abc",
-		Heroku: manifest.Heroku{
-			App: "abc",
-			Env: []string{"HELLO", "WORLD"},
-		},
-		Systemd: manifest.SystemdConfig{
-			Unit: manifest.SystemdUnit{
-				Description: "this is description",
-			},
-		},
-	}
-	serviceUnit, err := file.EvalServiceTemplate(m, "abc")
+	m := manifest.Manifest{}
+	err = json.Unmarshal([]byte(data), &m)
 	if err != nil {
-		return config.ConfigFiles{}, err
+		logger.Println(err)
+		http.Error(w, `{"error":"unmarshalling json"}`, http.StatusInternalServerError)
+		return
+	}
+
+	c := config.ConfigFiles{}
+
+	serviceUnit, err := file.EvalServiceTemplate(m)
+	if err != nil {
+		logger.Println(err)
+		http.Error(w, `{"error":"evaluating service template"}`, http.StatusInternalServerError)
+		return
 	}
 
 	c.Systemd = file.ToJSONCompliant(serviceUnit)
 
 	runScript, err := file.EvalRunScriptTemplate(m)
 	if err != nil {
-		return config.ConfigFiles{}, err
+		logger.Println(err)
+		http.Error(w, `{"error":"evaluating run script template"}`, http.StatusInternalServerError)
+		return
 	}
 	c.RunScript = file.ToJSONCompliant(runScript)
 
-	return c, nil
+	// return c, nil
 }
