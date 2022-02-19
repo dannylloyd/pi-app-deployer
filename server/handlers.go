@@ -69,6 +69,7 @@ func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+	logger.Println("unmarshalling manifest")
 
 	m := manifest.Manifest{}
 	err = json.Unmarshal([]byte(data), &m)
@@ -80,6 +81,7 @@ func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
 
 	c := config.ConfigFiles{}
 
+	logger.Println("evaluating service template")
 	serviceUnit, err := file.EvalServiceTemplate(m)
 	if err != nil {
 		logger.Println(err)
@@ -89,6 +91,7 @@ func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
 
 	c.Systemd = file.ToJSONCompliant(serviceUnit)
 
+	logger.Println("evaluating run script template")
 	runScript, err := file.EvalRunScriptTemplate(m)
 	if err != nil {
 		logger.Println(err)

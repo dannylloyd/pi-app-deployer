@@ -61,6 +61,9 @@ func RenderTemplates(m manifest.Manifest) error {
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 	fmt.Println(string(data))
 	return nil
 }
