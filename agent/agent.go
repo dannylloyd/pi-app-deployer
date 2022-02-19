@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
@@ -10,16 +11,18 @@ import (
 )
 
 type Agent struct {
-	Config     config.Config
-	MqttClient mqtt.MqttClient
-	GHApiToken string
+	Config       config.Config
+	MqttClient   mqtt.MqttClient
+	GHApiToken   string
+	HerokuAPIKey string
 }
 
-func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken string) Agent {
+func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey string) Agent {
 	return Agent{
-		Config:     cfg,
-		MqttClient: client,
-		GHApiToken: ghApiToken,
+		Config:       cfg,
+		MqttClient:   client,
+		GHApiToken:   ghApiToken,
+		HerokuAPIKey: herokuAPIKey,
 	}
 }
 
@@ -40,6 +43,10 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
 	if err != nil {
 		return fmt.Errorf("rendering templates: %s", err)
 	}
-	fmt.Println(c)
+
+	// updating heroku api key is required so we don't send it
+	// to the server unnecessarily
+	c.Systemd = strings.ReplaceAll(c.Systemd, "{{.HerokuAPIKey}}", a.HerokuAPIKey)
+
 	return nil
 }

@@ -37,6 +37,11 @@ func main() {
 		logger.Fatalln("GH_API_TOKEN environment variable is required")
 	}
 
+	herokuAPIKey := os.Getenv("HEROKU_API_KEY")
+	if herokuAPIKey == "" {
+		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
+	}
+
 	user := os.Getenv("CLOUDMQTT_AGENT_USER")
 	password := os.Getenv("CLOUDMQTT_AGENT_PASSWORD")
 	mqttURL := os.Getenv("CLOUDMQTT_URL")
@@ -47,7 +52,7 @@ func main() {
 
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 
-	agent := newAgent(cfg, client, ghApiToken)
+	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey)
 
 	client.Subscribe(config.RepoPushTopic, func(message string) {
 		var artifact config.Artifact
