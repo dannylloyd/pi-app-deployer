@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -56,7 +59,27 @@ func main() {
 
 func handleRepoUpdate(artifact config.Artifact) {
 	logger.Println(fmt.Sprintf("Received message on topic %s:", config.RepoPushTopic))
-	logger.Println(artifact)
+
+	postBody, _ := json.Marshal(map[string]string{
+		"name":  "Toby",
+		"email": "Toby@example.com",
+	})
+
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodPost, "https://pi-app-updater.herokuapp.com/templates/render", bytes.NewBuffer(postBody))
+	if err != nil {
+		logger.Println(err)
+		return
+	}
+	req.Header.Add("api-key", os.Getenv("PI_APP_UPDATER_API_KEY"))
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Println(err)
+		return
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(data))
 }
 
 func forever() {
