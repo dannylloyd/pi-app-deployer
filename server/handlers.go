@@ -99,7 +99,12 @@ func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.RunScript = file.ToJSONCompliant(runScript)
-	body, _ := json.Marshal(c)
-	logger.Println(string(body))
+	body, err := json.Marshal(c)
+	if err != nil {
+		logger.Println(err)
+		http.Error(w, `{"error":"marshalling config files json"}`, http.StatusInternalServerError)
+		return
+	}
+
 	fmt.Fprintf(w, string(body))
 }

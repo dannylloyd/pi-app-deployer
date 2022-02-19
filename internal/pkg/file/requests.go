@@ -10,6 +10,7 @@ import (
 	"os/exec"
 
 	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 )
 
 func DownloadExtract(url, dlDir, ghApiToken string) error {
@@ -46,26 +47,31 @@ func DownloadExtract(url, dlDir, ghApiToken string) error {
 	return nil
 }
 
-func RenderTemplates(m manifest.Manifest) error {
+func RenderTemplates(m manifest.Manifest) (config.ConfigFiles, error) {
+	c := config.ConfigFiles{}
 	postBody, _ := json.Marshal(m)
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPost, "https://pi-app-updater.herokuapp.com/templates/render", bytes.NewBuffer(postBody))
 	if err != nil {
-		return err
+		return c, err
 
 	}
 	req.Header.Add("api-key", os.Getenv("PI_APP_UPDATER_API_KEY"))
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return c, err
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return c, err
 	}
-	fmt.Println(string(data))
-	return nil
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(data, &c)
+
+	fmt.Println(c)
+	return c, nil
 }
 
 func DownloadDirectory(packageName string) string {
