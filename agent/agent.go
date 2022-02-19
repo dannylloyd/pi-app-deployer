@@ -48,5 +48,10 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
 	// to the server unnecessarily
 	c.Systemd = strings.ReplaceAll(c.Systemd, "{{.HerokuAPIKey}}", a.HerokuAPIKey)
 
+	// stop systemd unit. Replace unit file and run file. Reload systemd daemon. Restart systemd unit.
+
+	// file.FromJSONCompliant(c.Systemd)
+	// file.FromJSONCompliant(c.RunScript)
+
 	return nil
 }
