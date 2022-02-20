@@ -10,7 +10,6 @@ import (
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 )
 
@@ -65,38 +64,13 @@ func main() {
 
 	if *install {
 		logger.Println("Installing application")
-		installed, version, err := agent.VersionTool.AppInstalled()
-		if err != nil {
-			logger.Fatalln(fmt.Errorf("checking if app is installed already: %s", err))
-		}
-		if installed {
-			logger.Fatalln(fmt.Sprintf("App already installed at version '%s', remove '--install' flag to check for updates", version))
-		}
-
-		c := config.Artifact{
+		a := config.Artifact{
 			Repository: cfg.RepoName,
 		}
-		url, err := github.GetDownloadURLWithRetries(c, true)
+		err := agent.handleInstall(a)
 		if err != nil {
-			logger.Fatalln(fmt.Errorf("getting download url for latest release: %s", err))
+			logger.Fatalln(fmt.Errorf("failed installation: %s", err))
 		}
-		logger.Println(url)
-
-		// latest, err := ghClient.GetLatestVersion(cfg)
-		// if err != nil {
-		// 	log.Fatalln(fmt.Sprintf("error getting latest version from github: %s", err))
-		// }
-
-		// err = installRelease(cfg, latest.AssetDownloadURL, sdTool)
-		// if err != nil {
-		// 	log.Fatalln(fmt.Errorf("error installing app: %s", err))
-		// }
-		// err = vTool.WriteCurrentVersion(latest.Version)
-		// if err != nil {
-		// 	log.Fatalln(fmt.Errorf("writing latest version to file: %s", err))
-		// }
-
-		// agent.VersionTool.WriteCurrentVersion("hello-world")
 		logger.Println("Successfully installed app")
 		os.Exit(0)
 	}
