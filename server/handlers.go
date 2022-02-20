@@ -10,6 +10,7 @@ import (
 	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
 )
 
 func handleRepoPush(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +37,7 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 
 	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", a.Repository))
 
-	url, err := getDownloadURLWithRetries(a)
+	url, err := github.GetDownloadURLWithRetries(a, false)
 	if err != nil {
 		logger.Println(err)
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
@@ -104,25 +105,4 @@ func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, string(body))
-}
-
-func handleVersionMain(w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		logger.Printf("error reading request body: err=%s\n", err)
-		http.Error(w, `{"error":"reading request body"}`, http.StatusInternalServerError)
-		return
-	}
-	defer r.Body.Close()
-
-	// m := manifest.Manifest{}
-	// err = json.Unmarshal([]byte(data), &m)
-	// if err != nil {
-	// 	logger.Println(err)
-	// 	http.Error(w, `{"error":"unmarshalling json"}`, http.StatusInternalServerError)
-	// 	return
-	// }
-	logger.Println(string(data))
-
-	fmt.Fprintf(w, "{}")
 }

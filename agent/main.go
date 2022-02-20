@@ -72,6 +72,8 @@ func main() {
 			logger.Fatalln(fmt.Sprintf("App already installed at version '%s', remove '--install' flag to check for updates", version))
 		}
 
+		file.GetLatestVersion(cfg)
+
 		// latest, err := ghClient.GetLatestVersion(cfg)
 		// if err != nil {
 		// 	log.Fatalln(fmt.Sprintf("error getting latest version from github: %s", err))
@@ -86,7 +88,7 @@ func main() {
 		// 	log.Fatalln(fmt.Errorf("writing latest version to file: %s", err))
 		// }
 
-		agent.VersionTool.WriteCurrentVersion("hello-world")
+		// agent.VersionTool.WriteCurrentVersion("hello-world")
 		logger.Println("Successfully installed app")
 		os.Exit(0)
 	}

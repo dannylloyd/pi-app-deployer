@@ -1,27 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
-	"github.com/google/go-github/v42/github"
 	gmux "github.com/gorilla/mux"
 )
-
-var backoffSchedule = []time.Duration{
-	10 * time.Second,
-	15 * time.Second,
-	20 * time.Second,
-	30 * time.Second,
-	60 * time.Second,
-}
 
 var logger = log.New(os.Stdout, "[Pi-App-Updater-Server] ", log.LstdFlags)
 
@@ -42,7 +29,6 @@ func main() {
 	router := gmux.NewRouter().StrictSlash(true)
 	router.Handle("/push", requireLogin(http.HandlerFunc(handleRepoPush))).Methods("POST")
 	router.Handle("/templates/render", requireLogin(http.HandlerFunc(handleTemplatesRender))).Methods("POST")
-	router.Handle("/version/main", requireLogin(http.HandlerFunc(handleVersionMain))).Methods("POST")
 
 	srv := &http.Server{
 		Handler: router,
@@ -75,55 +61,4 @@ func isAuthenticated(req *http.Request) bool {
 		return false
 	}
 	return true
-}
-
-func getDownloadURLWithRetries(artifact config.Artifact) (string, error) {
-	var err error
-	var url string
-	for _, backoff := range backoffSchedule {
-		url, err = getDownloadURL(artifact)
-		if url != "" {
-			return url, nil
-		}
-
-		logger.Println(fmt.Sprintf("Retrying in %v", backoff))
-		time.Sleep(backoff)
-	}
-	if err != nil {
-		return "", err
-	}
-	return "", fmt.Errorf("an unexpected event occurred, no url found and no error returned")
-}
-
-func getDownloadURL(artifact config.Artifact) (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/artifacts", artifact.Repository), nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	var artifacts github.ArtifactList
-	err = json.Unmarshal(body, &artifacts)
-	if err != nil {
-		return "", err
-	}
-
-	for _, a := range artifacts.Artifacts {
-		if artifact.Name == a.GetName() {
-			return a.GetArchiveDownloadURL(), nil
-		}
-	}
-
-	return "", fmt.Errorf("no artifact found for %s", artifact.Name)
 }

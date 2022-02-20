@@ -73,6 +73,32 @@ func RenderTemplates(m manifest.Manifest) (config.ConfigFiles, error) {
 	return c, nil
 }
 
+func GetLatestVersion(cfg config.Config) error {
+	postBody, _ := json.Marshal(cfg)
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%s/actions/artifacts", cfg.RepoName), bytes.NewBuffer(postBody))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("api-key", os.Getenv("PI_APP_UPDATER_API_KEY"))
+	req.Header.Add("Accept", "application/vnd.github.v3+json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	fmt.Println(string(data))
+
+	return nil
+}
+
 func DownloadDirectory(packageName string) string {
 	return fmt.Sprintf("/tmp/%s", packageName)
 }
