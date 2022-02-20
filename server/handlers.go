@@ -105,3 +105,24 @@ func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, string(body))
 }
+
+func handleVersionMain(w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logger.Printf("error reading request body: err=%s\n", err)
+		http.Error(w, `{"error":"reading request body"}`, http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	// m := manifest.Manifest{}
+	// err = json.Unmarshal([]byte(data), &m)
+	// if err != nil {
+	// 	logger.Println(err)
+	// 	http.Error(w, `{"error":"unmarshalling json"}`, http.StatusInternalServerError)
+	// 	return
+	// }
+	logger.Println(string(data))
+
+	fmt.Fprintf(w, "{}")
+}
