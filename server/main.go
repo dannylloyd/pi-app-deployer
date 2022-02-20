@@ -25,6 +25,7 @@ func main() {
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, pw, url)
 
 	messageClient = mqtt.NewMQTTClient(mqttAddr, *logger)
+	messageClient.Connect()
 
 	router := gmux.NewRouter().StrictSlash(true)
 	router.Handle("/push", requireLogin(http.HandlerFunc(handleRepoPush))).Methods("POST")
