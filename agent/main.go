@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 )
 
@@ -17,8 +18,15 @@ var logger = log.New(os.Stdout, "[Pi-App-Updater-Agent] ", log.LstdFlags)
 func main() {
 	// todo: support multiple repos and packages
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
-	packageName := flag.String("package-name", "", "Package name to install")
+	packageName := flag.String("package-name", "", "Package name to install or update")
+	install := flag.Bool("install", false, "First time install of the application")
 	flag.Parse()
+
+	var testMode bool
+	if os.Getenv("TEST_MODE") == "true" {
+		testMode = true
+		logger.Println("*** Running in test mode ***")
+	}
 
 	if *repoName == "" {
 		logger.Fatalln("repo-name is required")
@@ -49,12 +57,43 @@ func main() {
 		logger.Fatalln("CLOUDMQTT_AGENT_USER, CLOUDMQTT_AGENT_PASSWORD, and CLOUDMQTT_URL environment variables are required")
 	}
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, password, mqttURL)
-
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 
-	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey)
+	vTool := file.NewVersionTool(testMode, *packageName)
+	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, vTool, testMode)
 
-	client.Subscribe(config.RepoPushTopic, func(message string) {
+	if *install {
+		logger.Println("Installing application")
+		installed, version, err := agent.VersionTool.AppInstalled()
+		if err != nil {
+			logger.Fatalln(fmt.Errorf("checking if app is installed already: %s", err))
+		}
+		if installed {
+			logger.Fatalln(fmt.Sprintf("App already installed at version '%s', remove '--install' flag to check for updates", version))
+		}
+
+		// latest, err := ghClient.GetLatestVersion(cfg)
+		// if err != nil {
+		// 	log.Fatalln(fmt.Sprintf("error getting latest version from github: %s", err))
+		// }
+
+		// err = installRelease(cfg, latest.AssetDownloadURL, sdTool)
+		// if err != nil {
+		// 	log.Fatalln(fmt.Errorf("error installing app: %s", err))
+		// }
+		// err = vTool.WriteCurrentVersion(latest.Version)
+		// if err != nil {
+		// 	log.Fatalln(fmt.Errorf("writing latest version to file: %s", err))
+		// }
+
+		agent.VersionTool.WriteCurrentVersion("hello-world")
+		logger.Println("Successfully installed app")
+		os.Exit(0)
+	}
+
+	agent.MqttClient.Connect()
+
+	agent.MqttClient.Subscribe(config.RepoPushTopic, func(message string) {
 		var artifact config.Artifact
 		err := json.Unmarshal([]byte(message), &artifact)
 		if err != nil {

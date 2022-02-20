@@ -15,14 +15,18 @@ type Agent struct {
 	MqttClient   mqtt.MqttClient
 	GHApiToken   string
 	HerokuAPIKey string
+	TestMode     bool
+	VersionTool  file.VersionTool
 }
 
-func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey string) Agent {
+func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey string, versionTool file.VersionTool, testMode bool) Agent {
 	return Agent{
 		Config:       cfg,
 		MqttClient:   client,
 		GHApiToken:   ghApiToken,
 		HerokuAPIKey: herokuAPIKey,
+		VersionTool:  versionTool,
+		TestMode:     testMode,
 	}
 }
 

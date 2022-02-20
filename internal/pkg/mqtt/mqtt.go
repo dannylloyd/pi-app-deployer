@@ -25,7 +25,6 @@ func NewMQTTClient(addr string, logger log.Logger) MqttClient {
 	var clientID string
 	u, _ := uuid.NewV4()
 	clientID = u.String()
-	logger.Println("Starting MQTT client with id", clientID)
 	opts.SetClientID(clientID)
 	opts.OnConnect = func(client mqtt.Client) {
 		logger.Println("Connected to MQTT server")
@@ -34,12 +33,17 @@ func NewMQTTClient(addr string, logger log.Logger) MqttClient {
 		logger.Fatalf("Connection to MQTT server lost: %v", err)
 	}
 	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
+
 	return MqttClient{
 		client,
 		logger,
+	}
+}
+
+func (c MqttClient) Connect() {
+	if token := c.client.Connect(); token.Wait() && token.Error() != nil {
+		// todo: return error instead of panic
+		panic(token.Error())
 	}
 }
 
