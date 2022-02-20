@@ -10,6 +10,7 @@ import (
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
+	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 )
 
@@ -72,7 +73,14 @@ func main() {
 			logger.Fatalln(fmt.Sprintf("App already installed at version '%s', remove '--install' flag to check for updates", version))
 		}
 
-		file.GetLatestVersion(cfg)
+		c := config.Artifact{
+			Repository: cfg.RepoName,
+		}
+		url, err := github.GetDownloadURLWithRetries(c, true)
+		if err != nil {
+			logger.Fatalln(fmt.Errorf("getting download url for latest release: %s", err))
+		}
+		logger.Println(url)
 
 		// latest, err := ghClient.GetLatestVersion(cfg)
 		// if err != nil {

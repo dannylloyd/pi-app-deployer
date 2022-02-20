@@ -60,6 +60,14 @@ func getDownloadURL(artifact config.Artifact, latest bool) (string, error) {
 		return "", err
 	}
 
+	if len(artifacts.Artifacts) == 0 {
+		return "", fmt.Errorf("no artifacts returned from query")
+	}
+
+	if latest {
+		return artifacts.Artifacts[0].GetArchiveDownloadURL(), nil
+	}
+
 	for _, a := range artifacts.Artifacts {
 		if artifact.Name == a.GetName() {
 			return a.GetArchiveDownloadURL(), nil
