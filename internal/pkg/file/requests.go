@@ -48,8 +48,12 @@ func DownloadExtract(url, dlDir, ghApiToken string) error {
 }
 
 func RenderTemplates(m manifest.Manifest, cfg config.Config) (config.ConfigFiles, error) {
+	p := config.RenderTemplatesPayload{
+		Config:   cfg,
+		Manifest: m,
+	}
 	c := config.ConfigFiles{}
-	postBody, _ := json.Marshal(m)
+	postBody, _ := json.Marshal(p)
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPost, "https://pi-app-updater.herokuapp.com/templates/render", bytes.NewBuffer(postBody))
 	if err != nil {

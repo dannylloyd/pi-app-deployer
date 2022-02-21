@@ -84,6 +84,12 @@ func (a *Agent) gatherDependencies(artifact config.Artifact) error {
 		return fmt.Errorf("rendering templates: %s", err)
 	}
 
+	for _, t := range []string{c.PiAppUpdater, c.RunScript, c.Systemd} {
+		if t == "" {
+			return fmt.Errorf("one of the templates returned was empty")
+		}
+	}
+
 	// updating heroku api key is required so we don't send it
 	// to the server unnecessarily
 	c.Systemd = strings.ReplaceAll(c.Systemd, "{{.HerokuAPIKey}}", a.HerokuAPIKey)
