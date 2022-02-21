@@ -63,6 +63,11 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 	if err != nil {
 		return err
 	}
+
+	err = a.installDependencies(artifact)
+	if err != nil {
+		return err
+	}
 	// agent.VersionTool.WriteCurrentVersion("hello-world")
 	return nil
 }
@@ -114,5 +119,10 @@ func (a *Agent) gatherDependencies(artifact config.Artifact) error {
 		return fmt.Errorf("writing updater service file: %s", err)
 	}
 
+	return nil
+}
+
+func (a *Agent) installDependencies(artifact config.Artifact) error {
+	// move files to /etc/systemd/system and /home/pi
 	return nil
 }
