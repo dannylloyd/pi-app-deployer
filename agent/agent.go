@@ -109,7 +109,7 @@ func (a *Agent) gatherDependencies(artifact config.Artifact) error {
 	}
 
 	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
-	err = os.WriteFile(updaterServiceFileOutputPath, []byte(c.PiAppUpdater), 0644)
+	err = os.WriteFile(updaterServiceFileOutputPath, []byte(file.FromJSONCompliant(c.PiAppUpdater)), 0644)
 	if err != nil {
 		return fmt.Errorf("writing updater service file: %s", err)
 	}
