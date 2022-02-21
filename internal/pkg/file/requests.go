@@ -47,7 +47,7 @@ func DownloadExtract(url, dlDir, ghApiToken string) error {
 	return nil
 }
 
-func RenderTemplates(m manifest.Manifest) (config.ConfigFiles, error) {
+func RenderTemplates(m manifest.Manifest, cfg config.Config) (config.ConfigFiles, error) {
 	c := config.ConfigFiles{}
 	postBody, _ := json.Marshal(m)
 	client := &http.Client{}

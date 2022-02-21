@@ -1,5 +1,9 @@
 package config
 
+import (
+	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
+)
+
 const (
 	RepoPushTopic = "repo/push"
 )
@@ -22,7 +26,7 @@ type ConfigFiles struct {
 	PiAppUpdater string `json:"piAppUpdater"`
 }
 
-type AgentPayload struct {
-	Artifact    Artifact    `json:"artifact"`
-	ConfigFiles ConfigFiles `json:"configFiles"`
+type RenderTemplatesPayload struct {
+	Config   Config            `json:"config"`
+	Manifest manifest.Manifest `json:"manifest"`
 }

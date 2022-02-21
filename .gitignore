@@ -5,3 +5,5 @@ pi-app-updater
 util.sh
 *.version
 .env
+pi-app-updater-agent
+pi-app-updater-server

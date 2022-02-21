@@ -79,7 +79,7 @@ func (a *Agent) gatherDependencies(artifact config.Artifact) error {
 		return fmt.Errorf("getting manifest from directory %s: %s", dlDir, err)
 	}
 
-	c, err := file.RenderTemplates(m)
+	c, err := file.RenderTemplates(m, a.Config)
 	if err != nil {
 		return fmt.Errorf("rendering templates: %s", err)
 	}
@@ -97,12 +97,15 @@ func (a *Agent) gatherDependencies(artifact config.Artifact) error {
 
 	runScriptFile := fmt.Sprintf("run-%s.sh", a.Config.PackageName)
 	runScriptOutputPath := fmt.Sprintf("%s/%s", dlDir, runScriptFile)
-	if err != nil {
-		return err
-	}
 	err = os.WriteFile(runScriptOutputPath, []byte(file.FromJSONCompliant(c.RunScript)), 0644)
 	if err != nil {
 		return fmt.Errorf("writing run script: %s", err)
+	}
+
+	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
+	err = os.WriteFile(updaterServiceFileOutputPath, []byte(c.PiAppUpdater), 0644)
+	if err != nil {
+		return fmt.Errorf("writing updater service file: %s", err)
 	}
 
 	return nil
