@@ -70,6 +70,13 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 	if err != nil {
 		return err
 	}
+
+	if a.TestMode {
+		logger.Println("*** Test mode, not installing files ***")
+		return nil
+	}
+
+	a.installDependencies(artifact)
 	// agent.VersionTool.WriteCurrentVersion("hello-world")
 	return nil
 }
