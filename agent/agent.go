@@ -17,16 +17,18 @@ type Agent struct {
 	MqttClient   mqtt.MqttClient
 	GHApiToken   string
 	HerokuAPIKey string
+	ServerApiKey string
 	TestMode     bool
 	VersionTool  file.VersionTool
 }
 
-func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey string, versionTool file.VersionTool, testMode bool) Agent {
+func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey, serverApiKey string, versionTool file.VersionTool, testMode bool) Agent {
 	return Agent{
 		Config:       cfg,
 		MqttClient:   client,
 		GHApiToken:   ghApiToken,
 		HerokuAPIKey: herokuAPIKey,
+		ServerApiKey: serverApiKey,
 		VersionTool:  versionTool,
 		TestMode:     testMode,
 	}
@@ -84,7 +86,7 @@ func (a *Agent) gatherDependencies(artifact config.Artifact) error {
 		return fmt.Errorf("getting manifest from directory %s: %s", dlDir, err)
 	}
 
-	c, err := file.RenderTemplates(m, a.Config)
+	c, err := file.RenderTemplates(m, a.Config, a.ServerApiKey)
 	if err != nil {
 		return fmt.Errorf("rendering templates: %s", err)
 	}

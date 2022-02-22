@@ -50,6 +50,11 @@ func main() {
 		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
 	}
 
+	serverApiKey := os.Getenv("PI_APP_UPDATER_API_KEY")
+	if serverApiKey == "" {
+		logger.Fatalln("PI_APP_UPDATER_API_KEY environment variable is required")
+	}
+
 	user := os.Getenv("CLOUDMQTT_AGENT_USER")
 	password := os.Getenv("CLOUDMQTT_AGENT_PASSWORD")
 	mqttURL := os.Getenv("CLOUDMQTT_URL")
@@ -60,7 +65,7 @@ func main() {
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 
 	vTool := file.NewVersionTool(testMode, *packageName)
-	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, vTool, testMode)
+	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, vTool, testMode)
 
 	if *install {
 		logger.Println("Installing application")

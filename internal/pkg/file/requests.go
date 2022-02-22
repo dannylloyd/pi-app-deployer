@@ -47,7 +47,7 @@ func DownloadExtract(url, dlDir, ghApiToken string) error {
 	return nil
 }
 
-func RenderTemplates(m manifest.Manifest, cfg config.Config) (config.ConfigFiles, error) {
+func RenderTemplates(m manifest.Manifest, cfg config.Config, apiKey string) (config.ConfigFiles, error) {
 	p := config.RenderTemplatesPayload{
 		Config:   cfg,
 		Manifest: m,
@@ -60,7 +60,7 @@ func RenderTemplates(m manifest.Manifest, cfg config.Config) (config.ConfigFiles
 		return c, err
 
 	}
-	req.Header.Add("api-key", os.Getenv("PI_APP_UPDATER_API_KEY"))
+	req.Header.Add("api-key", apiKey)
 	resp, err := client.Do(req)
 	if err != nil {
 		return c, err
