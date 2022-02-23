@@ -19,14 +19,9 @@ type SystemdTool struct {
 	UnitName string
 }
 
-func NewSystemdTool(testMode bool, cfg config.Config) SystemdTool {
+func NewSystemdTool(cfg config.Config) SystemdTool {
 	s := SystemdTool{}
-	if testMode {
-		s.UnitPath = fmt.Sprintf("/tmp/%s/%s.service", cfg.PackageName, cfg.PackageName)
-	} else {
-		s.UnitPath = fmt.Sprintf("%s/%s.service", systemDPath, cfg.PackageName)
-	}
-
+	s.UnitPath = fmt.Sprintf("%s/%s.service", systemDPath, cfg.PackageName)
 	s.UnitName = fmt.Sprintf("%s.service", cfg.PackageName)
 	return s
 }
@@ -82,6 +77,20 @@ func (s SystemdTool) SetupSystemdUnits() error {
 }
 
 func (s SystemdTool) StopSystemdUnit() error {
+	cmd := exec.Command("systemctl", "status", s.UnitName)
+	stderr, _ := cmd.StderrPipe()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(stderr)
+	for scanner.Scan() {
+		// unit not intalled, it can be considered stopped
+		if strings.Contains(scanner.Text(), fmt.Sprintf("Unit %s.service could not be found.", s.UnitName)) {
+			return nil
+		}
+	}
+
 	_, err := exec.Command("systemctl", "stop", s.UnitName).Output()
 	if err != nil {
 		return fmt.Errorf("%s", err)

@@ -52,11 +52,15 @@ func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKe
 func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
 	logger.Println(fmt.Sprintf("Received message on topic %s:", config.RepoPushTopic), artifact.Repository)
 
-	// err := a.gatherDependencies(artifact)
-	// if err != nil {
-	// 	return err
-	// }
-	// stop systemd unit. Replace unit file and run file. Reload systemd daemon. Restart systemd unit.
+	err := a.gatherDependencies(artifact)
+	if err != nil {
+		return err
+	}
+
+	err = a.installDependencies(artifact)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -155,20 +159,25 @@ func (a *Agent) installDependencies(artifact config.Artifact) error {
 		return err
 	}
 
-	// err = file.CopyWithOwnership(paths.SrcDestMap)
-	// if err != nil {
-	// 	return err
-	// }
+	err = a.SystemdTool.StopSystemdUnit()
+	if err != nil {
+		return err
+	}
 
-	// err = sdTool.SetupSystemdUnits()
-	// if err != nil {
-	// 	return err
-	// }
+	err = file.CopyWithOwnership(paths.SrcDestMap)
+	if err != nil {
+		return err
+	}
 
-	// err = os.RemoveAll(dlDir)
-	// if err != nil {
-	// 	return fmt.Errorf("%s", err)
-	// }
+	err = a.SystemdTool.SetupSystemdUnits()
+	if err != nil {
+		return err
+	}
+
+	err = os.RemoveAll(paths.DownloadDirectory)
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
 
 	return nil
 }
