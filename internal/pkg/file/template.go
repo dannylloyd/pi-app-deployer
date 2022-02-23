@@ -29,28 +29,25 @@ type ServiceTemplateData struct {
 	TimeoutStartSec int
 	Restart         string
 	RestartSec      int
-	// TODO: it's unusual to render the templates except
-	// for the api key, but I don't want to send that
-	// through the api. Is there a better way to render
-	// the templates overall? Should the agent just do it?
-	// HerokuAPIKey    string
+	HerokuAPIKey    string
 }
 
 type RunScriptTemplateData struct {
 	EnvVarKeys    []string
 	ExecStart     string
 	HerokuAppName string
+	BinaryPath    string
 	NewLine       string
 }
 
-func EvalServiceTemplate(m manifest.Manifest) (string, error) {
+func EvalServiceTemplate(m manifest.Manifest, herokuAPIKey string) (string, error) {
 	d := ServiceTemplateData{
 		Description:     m.Systemd.Unit.Description,
 		ExecStart:       getExecStartName(m),
 		TimeoutStartSec: m.Systemd.Service.TimeoutStartSec,
 		Restart:         m.Systemd.Service.Restart,
 		RestartSec:      m.Systemd.Service.RestartSec,
-		// HerokuAPIKey:    herokuAPIKey,
+		HerokuAPIKey:    herokuAPIKey,
 	}
 
 	for _, a := range m.Systemd.Unit.After {
@@ -71,6 +68,7 @@ func EvalRunScriptTemplate(m manifest.Manifest) (string, error) {
 	d.ExecStart = getExecStartName(m)
 	d.HerokuAppName = m.Heroku.App
 	d.NewLine = "\n"
+	d.BinaryPath = getBinaryPath(m)
 	return evalTemplate(runScriptTemplate, d)
 }
 
@@ -108,6 +106,11 @@ func evalTemplate(templateFile string, d interface{}) (string, error) {
 
 func getExecStartName(m manifest.Manifest) string {
 	return fmt.Sprintf("/home/pi/run-%s.sh", m.Name)
+}
+
+// TODO: this is not configurable, need to fix it
+func getBinaryPath(m manifest.Manifest) string {
+	return fmt.Sprintf("/home/pi/%s", m.Name)
 }
 
 func FromJSONCompliant(fileWithNewlines string) string {

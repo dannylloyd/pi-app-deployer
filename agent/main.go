@@ -65,7 +65,8 @@ func main() {
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 
 	vTool := file.NewVersionTool(testMode, *packageName)
-	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, vTool, testMode)
+	sdTool := file.NewSystemdTool(testMode, cfg)
+	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, vTool, sdTool, testMode)
 
 	if *install {
 		logger.Println("Installing application")

@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
 )
 
@@ -59,58 +58,4 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "{\"status\":\"success\"}")
-}
-
-func handleTemplatesRender(w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		logger.Printf("error reading request body: err=%s\n", err)
-		http.Error(w, `{"error":"reading request body"}`, http.StatusInternalServerError)
-		return
-	}
-	defer r.Body.Close()
-
-	p := config.RenderTemplatesPayload{}
-
-	err = json.Unmarshal([]byte(data), &p)
-	if err != nil {
-		logger.Println(err)
-		http.Error(w, `{"error":"unmarshalling json"}`, http.StatusInternalServerError)
-		return
-	}
-
-	c := config.ConfigFiles{}
-
-	serviceUnit, err := file.EvalServiceTemplate(p.Manifest)
-	if err != nil {
-		logger.Println(err)
-		http.Error(w, `{"error":"evaluating service template"}`, http.StatusInternalServerError)
-		return
-	}
-	c.Systemd = file.ToJSONCompliant(serviceUnit)
-
-	runScript, err := file.EvalRunScriptTemplate(p.Manifest)
-	if err != nil {
-		logger.Println(err)
-		http.Error(w, `{"error":"evaluating run script template"}`, http.StatusInternalServerError)
-		return
-	}
-	c.RunScript = file.ToJSONCompliant(runScript)
-
-	updaterFile, err := file.EvalUpdaterTemplate(p.Config)
-	if err != nil {
-		logger.Println(err)
-		http.Error(w, `{"error":"evaluating updater template"}`, http.StatusInternalServerError)
-		return
-	}
-	c.PiAppUpdater = file.ToJSONCompliant(updaterFile)
-
-	body, err := json.Marshal(c)
-	if err != nil {
-		logger.Println(err)
-		http.Error(w, `{"error":"marshalling config files json"}`, http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Fprintf(w, string(body))
 }

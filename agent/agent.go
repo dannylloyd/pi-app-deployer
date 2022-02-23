@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
@@ -11,6 +10,19 @@ import (
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
 )
+
+const (
+	piUserHomeDir = "/home/pi"
+)
+
+type tmpOutputPaths struct {
+	ServiceFile        string
+	UpdaterServiceFile string
+	RunScript          string
+	PackageBinary      string
+	DownloadDirectory  string
+	SrcDestMap         map[string]string
+}
 
 type Agent struct {
 	Config       config.Config
@@ -20,9 +32,11 @@ type Agent struct {
 	ServerApiKey string
 	TestMode     bool
 	VersionTool  file.VersionTool
+	SystemdTool  file.SystemdTool
 }
 
-func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey, serverApiKey string, versionTool file.VersionTool, testMode bool) Agent {
+func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey, serverApiKey string, versionTool file.VersionTool, systemdTool file.SystemdTool, testMode bool) Agent {
+
 	return Agent{
 		Config:       cfg,
 		MqttClient:   client,
@@ -30,6 +44,7 @@ func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKe
 		HerokuAPIKey: herokuAPIKey,
 		ServerApiKey: serverApiKey,
 		VersionTool:  versionTool,
+		SystemdTool:  systemdTool,
 		TestMode:     testMode,
 	}
 }
@@ -37,10 +52,10 @@ func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKe
 func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
 	logger.Println(fmt.Sprintf("Received message on topic %s:", config.RepoPushTopic), artifact.Repository)
 
-	err := a.gatherDependencies(artifact)
-	if err != nil {
-		return err
-	}
+	// err := a.gatherDependencies(artifact)
+	// if err != nil {
+	// 	return err
+	// }
 	// stop systemd unit. Replace unit file and run file. Reload systemd daemon. Restart systemd unit.
 
 	return nil
@@ -66,64 +81,65 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 		return err
 	}
 
+	// if a.TestMode {
+	// 	logger.Println("*** Test mode, not installing files ***")
+	// 	return nil
+	// }
+
 	err = a.installDependencies(artifact)
 	if err != nil {
 		return err
 	}
 
-	if a.TestMode {
-		logger.Println("*** Test mode, not installing files ***")
-		return nil
-	}
-
-	a.installDependencies(artifact)
 	// agent.VersionTool.WriteCurrentVersion("hello-world")
 	return nil
 }
 
 func (a *Agent) gatherDependencies(artifact config.Artifact) error {
-	dlDir := file.DownloadDirectory(a.Config.PackageName)
-	err := file.DownloadExtract(artifact.ArchiveDownloadURL, dlDir, a.GHApiToken)
+	paths := a.calcTmpOutputPaths()
+
+	err := file.DownloadExtract(artifact.ArchiveDownloadURL, paths.DownloadDirectory, a.GHApiToken)
 	if err != nil {
 		return fmt.Errorf("downloading and extracting artifact: %s", err)
 	}
 
-	m, err := manifest.GetManifest(fmt.Sprintf("%s/.pi-app-updater.yaml", dlDir))
+	m, err := manifest.GetManifest(fmt.Sprintf("%s/.pi-app-updater.yaml", paths.DownloadDirectory))
 	if err != nil {
-		return fmt.Errorf("getting manifest from directory %s: %s", dlDir, err)
+		return fmt.Errorf("getting manifest from directory %s: %s", paths.DownloadDirectory, err)
 	}
 
-	c, err := file.RenderTemplates(m, a.Config, a.ServerApiKey)
+	serviceUnit, err := file.EvalServiceTemplate(m, a.HerokuAPIKey)
 	if err != nil {
-		return fmt.Errorf("rendering templates: %s", err)
+		return fmt.Errorf("rendering service template: %s", err)
 	}
 
-	for _, t := range []string{c.PiAppUpdater, c.RunScript, c.Systemd} {
+	runScript, err := file.EvalRunScriptTemplate(m)
+	if err != nil {
+		return fmt.Errorf("rendering runscript template: %s", err)
+	}
+
+	updaterFile, err := file.EvalUpdaterTemplate(a.Config)
+	if err != nil {
+		return fmt.Errorf("rendering updater template: %s", err)
+	}
+
+	for _, t := range []string{serviceUnit, runScript, updaterFile} {
 		if t == "" {
-			return fmt.Errorf("one of the templates returned was empty")
+			return fmt.Errorf("one of the templates rendered was empty")
 		}
 	}
 
-	// updating heroku api key is required so we don't send it
-	// to the server unnecessarily
-	c.Systemd = strings.ReplaceAll(c.Systemd, "{{.HerokuAPIKey}}", a.HerokuAPIKey)
-
-	serviceFile := fmt.Sprintf("%s.service", a.Config.PackageName)
-	serviceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, serviceFile)
-	err = os.WriteFile(serviceFileOutputPath, []byte(file.FromJSONCompliant(c.Systemd)), 0644)
+	err = os.WriteFile(paths.ServiceFile, []byte(serviceUnit), 0644)
 	if err != nil {
 		return fmt.Errorf("writing service file: %s", err)
 	}
 
-	runScriptFile := fmt.Sprintf("run-%s.sh", a.Config.PackageName)
-	runScriptOutputPath := fmt.Sprintf("%s/%s", dlDir, runScriptFile)
-	err = os.WriteFile(runScriptOutputPath, []byte(file.FromJSONCompliant(c.RunScript)), 0644)
+	err = os.WriteFile(paths.RunScript, []byte(runScript), 0644)
 	if err != nil {
 		return fmt.Errorf("writing run script: %s", err)
 	}
 
-	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
-	err = os.WriteFile(updaterServiceFileOutputPath, []byte(file.FromJSONCompliant(c.PiAppUpdater)), 0644)
+	err = os.WriteFile(paths.UpdaterServiceFile, []byte(updaterFile), 0644)
 	if err != nil {
 		return fmt.Errorf("writing updater service file: %s", err)
 	}
@@ -132,6 +148,56 @@ func (a *Agent) gatherDependencies(artifact config.Artifact) error {
 }
 
 func (a *Agent) installDependencies(artifact config.Artifact) error {
-	// move files to /etc/systemd/system and /home/pi
+	paths := a.calcTmpOutputPaths()
+
+	err := file.MakeExecutable([]string{paths.RunScript, paths.PackageBinary})
+	if err != nil {
+		return err
+	}
+
+	// err = file.CopyWithOwnership(paths.SrcDestMap)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// err = sdTool.SetupSystemdUnits()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// err = os.RemoveAll(dlDir)
+	// if err != nil {
+	// 	return fmt.Errorf("%s", err)
+	// }
+
 	return nil
+}
+
+func (a *Agent) calcTmpOutputPaths() tmpOutputPaths {
+	dlDir := file.DownloadDirectory(a.Config.PackageName)
+	runScriptFile := fmt.Sprintf("run-%s.sh", a.Config.PackageName)
+	runScriptOutputPath := fmt.Sprintf("%s/%s", dlDir, runScriptFile)
+
+	serviceFile := fmt.Sprintf("%s.service", a.Config.PackageName)
+	serviceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, serviceFile)
+
+	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
+
+	tmpBinarypath := fmt.Sprintf("%s/%s", dlDir, a.Config.PackageName)
+	packageBinaryOutputPath := fmt.Sprintf("%s/%s", piUserHomeDir, a.Config.PackageName)
+
+	var srcDestMap = map[string]string{
+		serviceFileOutputPath: a.SystemdTool.UnitPath,
+		runScriptOutputPath:   fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
+		tmpBinarypath:         packageBinaryOutputPath,
+	}
+
+	return tmpOutputPaths{
+		RunScript:          runScriptOutputPath,
+		ServiceFile:        serviceFileOutputPath,
+		UpdaterServiceFile: updaterServiceFileOutputPath,
+		PackageBinary:      tmpBinarypath,
+		DownloadDirectory:  dlDir,
+		SrcDestMap:         srcDestMap,
+	}
 }
