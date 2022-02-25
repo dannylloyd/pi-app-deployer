@@ -3,6 +3,7 @@ package file
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -68,32 +69,41 @@ func (s SystemdTool) SetupSystemdUnits() error {
 		return fmt.Errorf("starting %s systemd unit: %s", s.UnitName, err)
 	}
 
-	_, err = exec.Command("systemctl", "start", "pi-app-updater").Output()
-	if err != nil {
-		return fmt.Errorf("starting pi-app-updater systemd unit: %s", err)
+	startCmd := exec.Command("systemctl", "start", "pi-app-updater")
+	stderr, err := startCmd.StderrPipe()
+	if err := startCmd.Start(); err != nil {
+		return fmt.Errorf("err: %s, stderr text: %s", err, getStdErrText(stderr))
 	}
 
 	return nil
 }
 
 func (s SystemdTool) StopSystemdUnit() error {
-	cmd := exec.Command("systemctl", "status", s.UnitName)
+	cmd := exec.Command("systemctl", "is-enabled", s.UnitName)
 	stderr, _ := cmd.StderrPipe()
 	if err := cmd.Start(); err != nil {
 		return err
 	}
 
-	scanner := bufio.NewScanner(stderr)
-	for scanner.Scan() {
-		// unit not intalled, it can be considered stopped
-		if strings.Contains(scanner.Text(), fmt.Sprintf("Unit %s.service could not be found.", s.UnitName)) {
-			return nil
-		}
+	notInstalledErr := fmt.Sprintf("Failed to get unit file state for %s: No such file or directory", s.UnitName)
+
+	// unit not intalled, it can be considered stopped
+	if strings.Contains(getStdErrText(stderr), notInstalledErr) {
+		return nil
 	}
 
 	_, err := exec.Command("systemctl", "stop", s.UnitName).Output()
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("stopping systemd unit: %s", err)
 	}
 	return nil
+}
+
+func getStdErrText(stderr io.ReadCloser) string {
+	stdErrText := ""
+	scanner := bufio.NewScanner(stderr)
+	for scanner.Scan() {
+		stdErrText += scanner.Text()
+	}
+	return stdErrText
 }

@@ -7,4 +7,4 @@ test:
 	go test -v ./...
 
 deploy-dev: build
-	scp pi-app-updater pi@${IP}:dev-pi-app-updater
+	scp pi-app-updater-agent pi@${IP}:dev-pi-app-updater

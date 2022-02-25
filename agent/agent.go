@@ -154,17 +154,17 @@ func (a *Agent) gatherDependencies(artifact config.Artifact) error {
 func (a *Agent) installDependencies(artifact config.Artifact) error {
 	paths := a.calcTmpOutputPaths()
 
-	err := file.MakeExecutable([]string{paths.RunScript, paths.PackageBinary})
-	if err != nil {
-		return err
-	}
-
-	err = a.SystemdTool.StopSystemdUnit()
+	err := a.SystemdTool.StopSystemdUnit()
 	if err != nil {
 		return err
 	}
 
 	err = file.CopyWithOwnership(paths.SrcDestMap)
+	if err != nil {
+		return err
+	}
+
+	err = file.MakeExecutable([]string{paths.SrcDestMap[paths.RunScript], paths.SrcDestMap[paths.PackageBinary]})
 	if err != nil {
 		return err
 	}
