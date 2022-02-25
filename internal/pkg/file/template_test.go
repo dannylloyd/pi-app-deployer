@@ -25,7 +25,7 @@ StartLimitBurst=10
 
 [Install]
 WantedBy=multi-user.target
-StandardOutput=inherit
+
 [Service]
 ExecStart=/home/pi/run-sample-app.sh
 WorkingDirectory=/home/pi/
