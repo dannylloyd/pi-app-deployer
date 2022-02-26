@@ -192,7 +192,7 @@ func (a *Agent) calcTmpOutputPaths() tmpOutputPaths {
 	serviceFile := fmt.Sprintf("%s.service", a.Config.PackageName)
 	serviceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, serviceFile)
 
-	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater.service")
+	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-updater-agent.service")
 
 	tmpBinarypath := fmt.Sprintf("%s/%s", dlDir, a.Config.PackageName)
 	packageBinaryOutputPath := fmt.Sprintf("%s/%s", piUserHomeDir, a.Config.PackageName)
@@ -201,7 +201,7 @@ func (a *Agent) calcTmpOutputPaths() tmpOutputPaths {
 		serviceFileOutputPath:        a.SystemdTool.UnitPath,
 		runScriptOutputPath:          fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
 		tmpBinarypath:                packageBinaryOutputPath,
-		updaterServiceFileOutputPath: "/etc/systemd/system/pi-app-updater.service",
+		updaterServiceFileOutputPath: "/etc/systemd/system/pi-app-updater-agent.service",
 	}
 
 	return tmpOutputPaths{

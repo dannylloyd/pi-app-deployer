@@ -70,7 +70,7 @@ func (s SystemdTool) SetupSystemdUnits() error {
 	}
 
 	// todo: better error handling
-	startCmd := exec.Command("systemctl", "start", "pi-app-updater")
+	startCmd := exec.Command("systemctl", "start", "pi-app-updater-agent")
 	stderr, pipeErr := startCmd.StderrPipe()
 	if pipeErr != nil {
 		return pipeErr

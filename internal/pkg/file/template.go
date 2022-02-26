@@ -18,7 +18,7 @@ var runScriptTemplate string
 //go:embed templates/service.tmpl
 var serviceTemplate string
 
-//go:embed templates/pi-app-updater.tmpl
+//go:embed templates/pi-app-updater-agent.tmpl
 var updaterTemplate string
 
 type ServiceTemplateData struct {
