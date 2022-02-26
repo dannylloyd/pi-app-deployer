@@ -58,6 +58,7 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 [Service]
+EnvironmentFile=/home/pi/.pi-app-updater.env
 ExecStart=/home/pi/pi-app-updater --repo-name andrewmarklloyd/pi-test --package-name pi-test-client
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
