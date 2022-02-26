@@ -49,7 +49,7 @@ func Test_EvalUpdaterTemplate(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedServiceFile := `[Unit]
-Description=pi-app-updater
+Description=pi-app-updater-agent
 After=network.target
 StartLimitInterval=300
 StartLimitBurst=10
@@ -58,8 +58,8 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 [Service]
-EnvironmentFile=/home/pi/.pi-app-updater.env
-ExecStart=/home/pi/pi-app-updater --repo-name andrewmarklloyd/pi-test --package-name pi-test-client
+EnvironmentFile=/home/pi/.pi-app-updater-agent.env
+ExecStart=/home/pi/pi-app-updater-agent --repo-name andrewmarklloyd/pi-test --package-name pi-test-client
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
 StandardError=inherit
