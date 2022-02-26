@@ -15,9 +15,10 @@ const (
 )
 
 type Manifest struct {
-	Name    string        `yaml:"name"`
-	Heroku  Heroku        `yaml:"heroku"`
-	Systemd SystemdConfig `yaml:"systemd"`
+	Name       string        `yaml:"name"`
+	Executable string        `yame:"exectutable"`
+	Heroku     Heroku        `yaml:"heroku"`
+	Systemd    SystemdConfig `yaml:"systemd"`
 }
 
 type Heroku struct {
@@ -75,6 +76,10 @@ func (m *Manifest) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	if m.Name == "" {
 		result = multierror.Append(result, fmt.Errorf("name field is required"))
+	}
+
+	if m.Executable == "" {
+		result = multierror.Append(result, fmt.Errorf("executable field is required"))
 	}
 
 	if m.Heroku.App == "" {

@@ -1,3 +1,4 @@
 name: sample-app
+executable: sample-app-agent
 heroku:
   app: sample-app-test

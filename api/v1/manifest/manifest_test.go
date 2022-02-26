@@ -13,6 +13,7 @@ func Test_FullyDefinedManifest(t *testing.T) {
 	}
 
 	assert.Equal(t, "sample-app", m.Name)
+	assert.Equal(t, "sample-app-agent", m.Executable)
 	assert.Equal(t, "sample-app-test", m.Heroku.App)
 	assert.Equal(t, []string{"CLOUDMQTT_URL", "LOG_LEVEL"}, m.Heroku.Env)
 	assert.Equal(t, "Sample App", m.Systemd.Unit.Description)
@@ -30,6 +31,7 @@ func Test_Defaults(t *testing.T) {
 	}
 
 	assert.Equal(t, "sample-app", m.Name)
+	assert.Equal(t, "sample-app-agent", m.Executable)
 	assert.Equal(t, "sample-app-test", m.Heroku.App)
 
 	assert.Equal(t, "sample-app", m.Systemd.Unit.Description)
@@ -52,5 +54,5 @@ func Test_MissingField(t *testing.T) {
 	_, err := GetManifest("../../../test/templates/missing-field-manifest.yaml")
 
 	assert.NotNil(t, err, "getting manifest should return err")
-	assert.EqualError(t, err, "unmarshalling manifest yaml file: 2 errors occurred:\n\t* name field is required\n\t* heroku.app field is required\n\n ")
+	assert.EqualError(t, err, "unmarshalling manifest yaml file: 3 errors occurred:\n\t* name field is required\n\t* executable field is required\n\t* heroku.app field is required\n\n ")
 }
