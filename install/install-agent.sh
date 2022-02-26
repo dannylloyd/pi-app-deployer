@@ -22,9 +22,12 @@ CLOUDMQTT_AGENT_USER
 CLOUDMQTT_AGENT_PASSWORD
 CLOUDMQTT_URL"
 
+envFile="/home/pi/.pi-app-updater.env"
+rm -f ${envFile}
 for key in ${reqVars}; do
   val=$(echo $vars | jq -r ".${key}")
   export "${key}=${val}"
+  echo "${key}=${val}" >> ${envFile}
 done
 
 version=v0.0.2
