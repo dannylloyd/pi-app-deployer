@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+get_latest_release() {
+  curl --silent "https://api.github.com/repos/andrewmarklloyd/pi-app-updater/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+}
+
 if [[ $(whoami) != "root" ]]; then
   echo "Script must be run as root"
   exit 1
@@ -35,7 +39,7 @@ for key in ${reqVars}; do
   echo "${key}=${val}" >> ${envFile}
 done
 
-version=v0.0.3
+version=$(get_latest_release)
 curl -sL https://github.com/andrewmarklloyd/pi-app-updater/releases/download/${version}/pi-app-updater-agent-${version}-linux-arm.tar.gz | tar zx -C /tmp
 
 mv /tmp/pi-app-updater-agent /home/pi/pi-app-updater-agent
