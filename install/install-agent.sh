@@ -31,7 +31,7 @@ CLOUDMQTT_AGENT_USER
 CLOUDMQTT_AGENT_PASSWORD
 CLOUDMQTT_URL"
 
-envFile="/home/pi/.pi-app-updater.env"
+envFile="/home/pi/.pi-app-updater-agent.env"
 rm -f ${envFile}
 for key in ${reqVars}; do
   val=$(echo $vars | jq -r ".${key}")
