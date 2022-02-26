@@ -33,6 +33,7 @@ CLOUDMQTT_URL"
 
 envFile="/home/pi/.pi-app-updater-agent.env"
 rm -f ${envFile}
+echo "HEROKU_API_KEY=${HEROKU_API_KEY}" > ${envFile}
 for key in ${reqVars}; do
   val=$(echo $vars | jq -r ".${key}")
   export "${key}=${val}"
