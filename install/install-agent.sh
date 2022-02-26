@@ -49,7 +49,7 @@ read package
 echo
 echo "Press enter to run the pi-app-updater installer using the following command:"
 
-c="/home/pi/pi-app-updater --repo-name ${repo} --package-name ${package} --install"
+c="/home/pi/pi-app-updater-agent --repo-name ${repo} --package-name ${package} --install"
 echo "${c}"
 read
 
