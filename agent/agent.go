@@ -62,6 +62,7 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
 		return err
 	}
 
+	a.VersionTool.WriteCurrentVersion(artifact.SHA)
 	return nil
 }
 
@@ -79,6 +80,7 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 		logger.Fatalln(fmt.Errorf("getting download url for latest release: %s", err))
 	}
 
+	artifact.SHA = "HEAD"
 	artifact.ArchiveDownloadURL = url
 	err = a.gatherDependencies(artifact)
 	if err != nil {
@@ -95,7 +97,7 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 		return err
 	}
 
-	// agent.VersionTool.WriteCurrentVersion("hello-world")
+	a.VersionTool.WriteCurrentVersion(artifact.SHA)
 	return nil
 }
 
@@ -196,9 +198,10 @@ func (a *Agent) calcTmpOutputPaths() tmpOutputPaths {
 	packageBinaryOutputPath := fmt.Sprintf("%s/%s", piUserHomeDir, a.Config.PackageName)
 
 	var srcDestMap = map[string]string{
-		serviceFileOutputPath: a.SystemdTool.UnitPath,
-		runScriptOutputPath:   fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
-		tmpBinarypath:         packageBinaryOutputPath,
+		serviceFileOutputPath:        a.SystemdTool.UnitPath,
+		runScriptOutputPath:          fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
+		tmpBinarypath:                packageBinaryOutputPath,
+		updaterServiceFileOutputPath: "/etc/systemd/system/pi-app-updater.service",
 	}
 
 	return tmpOutputPaths{

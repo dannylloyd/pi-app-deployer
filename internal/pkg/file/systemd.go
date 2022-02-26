@@ -69,8 +69,12 @@ func (s SystemdTool) SetupSystemdUnits() error {
 		return fmt.Errorf("starting %s systemd unit: %s", s.UnitName, err)
 	}
 
+	// todo: better error handling
 	startCmd := exec.Command("systemctl", "start", "pi-app-updater")
-	stderr, err := startCmd.StderrPipe()
+	stderr, pipeErr := startCmd.StderrPipe()
+	if pipeErr != nil {
+		return pipeErr
+	}
 	if err := startCmd.Start(); err != nil {
 		return fmt.Errorf("err: %s, stderr text: %s", err, getStdErrText(stderr))
 	}

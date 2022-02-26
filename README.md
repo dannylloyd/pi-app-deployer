@@ -14,8 +14,7 @@ Requires several environment variables:
 - PI_APP_UPDATER_API_KEY: Pi App Updater server's API key. Required for posting and getting data from the server.
 
 ```
-curl -sL https://github.com/andrewmarklloyd/pi-app-updater/releases/download/v0.0.2/pi-app-updater-agent-v0.0.2-linux-arm.tar.gz | tar xvz -C /tmp
-/tmp/pi-app-updater-agent --repo-name <github-repo-with-org> --package-name <package-name> --install
+bash <(curl -s -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/andrewmarklloyd/pi-app-updater/master/install/install-agent.sh)
 ```
 
 TODO
