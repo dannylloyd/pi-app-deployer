@@ -15,6 +15,7 @@ const (
 )
 
 type Manifest struct {
+	// Name is used for the systemd unit file. TODO: add validation for spaces, strings, etc
 	Name       string        `yaml:"name"`
 	Executable string        `yame:"exectutable"`
 	Heroku     Heroku        `yaml:"heroku"`

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -16,57 +15,22 @@ const (
 )
 
 type SystemdTool struct {
-	UnitPath string
-	UnitName string
 }
 
 func NewSystemdTool(cfg config.Config) SystemdTool {
 	s := SystemdTool{}
-	s.UnitPath = fmt.Sprintf("%s/%s.service", systemDPath, cfg.PackageName)
-	s.UnitName = fmt.Sprintf("%s.service", cfg.PackageName)
 	return s
 }
 
-func (s SystemdTool) FindApiKeyFromSystemd() (string, error) {
-	f, err := os.Open(s.UnitPath)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	var keyLineString string
-	scanner := bufio.NewScanner(f)
-	line := 1
-	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "HEROKU_API_KEY") {
-			keyLineString = scanner.Text()
-			break
-		}
-		line++
-	}
-
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-
-	// Expected Systemd env var pattern: Environment=HEROKU_API_KEY=<api-key>
-	split := strings.Split(keyLineString, "=")
-	if len(split) != 3 {
-		return "", fmt.Errorf("expected systemd file heroku api key line to have length 3")
-	}
-
-	return split[2], nil
-}
-
-func (s SystemdTool) SetupSystemdUnits() error {
+func (s SystemdTool) SetupSystemdUnits(unitName string) error {
 	_, err := exec.Command("systemctl", "daemon-reload").Output()
 	if err != nil {
 		return fmt.Errorf("%s", err)
 	}
 
-	_, err = exec.Command("systemctl", "start", s.UnitName).Output()
+	_, err = exec.Command("systemctl", "start", unitName).Output()
 	if err != nil {
-		return fmt.Errorf("starting %s systemd unit: %s", s.UnitName, err)
+		return fmt.Errorf("starting %s systemd unit: %s", unitName, err)
 	}
 
 	// todo: better error handling
@@ -82,21 +46,21 @@ func (s SystemdTool) SetupSystemdUnits() error {
 	return nil
 }
 
-func (s SystemdTool) StopSystemdUnit() error {
-	cmd := exec.Command("systemctl", "is-enabled", s.UnitName)
+func (s SystemdTool) StopSystemdUnit(unitName string) error {
+	cmd := exec.Command("systemctl", "is-enabled", unitName)
 	stderr, _ := cmd.StderrPipe()
 	if err := cmd.Start(); err != nil {
 		return err
 	}
 
-	notInstalledErr := fmt.Sprintf("Failed to get unit file state for %s: No such file or directory", s.UnitName)
+	notInstalledErr := fmt.Sprintf("Failed to get unit file state for %s: No such file or directory", unitName)
 
 	// unit not intalled, it can be considered stopped
 	if strings.Contains(getStdErrText(stderr), notInstalledErr) {
 		return nil
 	}
 
-	_, err := exec.Command("systemctl", "stop", s.UnitName).Output()
+	_, err := exec.Command("systemctl", "stop", unitName).Output()
 	if err != nil {
 		return fmt.Errorf("stopping systemd unit: %s", err)
 	}

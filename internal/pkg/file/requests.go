@@ -77,10 +77,6 @@ func RenderTemplates(m manifest.Manifest, cfg config.Config, apiKey string) (con
 	return c, nil
 }
 
-func DownloadDirectory(packageName string) string {
-	return fmt.Sprintf("/tmp/%s", packageName)
-}
-
 func unzip(src, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {

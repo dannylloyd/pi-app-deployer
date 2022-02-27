@@ -18,7 +18,6 @@ var logger = log.New(os.Stdout, "[Pi-App-Updater-Agent] ", log.LstdFlags)
 func main() {
 	// todo: support multiple repos and packages
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
-	packageName := flag.String("package-name", "", "Package name to install or update")
 	install := flag.Bool("install", false, "First time install of the application")
 	flag.Parse()
 
@@ -31,13 +30,9 @@ func main() {
 	if *repoName == "" {
 		logger.Fatalln("repo-name is required")
 	}
-	if *packageName == "" {
-		logger.Fatalln("package-name is required")
-	}
 
 	cfg := config.Config{
-		RepoName:    *repoName,
-		PackageName: *packageName,
+		RepoName: *repoName,
 	}
 
 	ghApiToken := os.Getenv("GH_API_TOKEN")
@@ -64,9 +59,8 @@ func main() {
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, password, mqttURL)
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 
-	vTool := file.NewVersionTool(testMode, *packageName)
 	sdTool := file.NewSystemdTool(cfg)
-	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, vTool, sdTool, testMode)
+	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, sdTool, testMode)
 
 	if *install {
 		logger.Println("Installing application")
