@@ -16,15 +16,6 @@ const (
 	piUserHomeDir = "/home/pi"
 )
 
-type tmpOutputPaths struct {
-	ServiceFile        string
-	UpdaterServiceFile string
-	RunScript          string
-	PackageBinary      string
-	DownloadDirectory  string
-	SrcDestMap         map[string]string
-}
-
 type Agent struct {
 	Config            config.Config
 	MqttClient        mqtt.MqttClient
