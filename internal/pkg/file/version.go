@@ -57,5 +57,5 @@ func (v VersionTool) Cleanup(serviceName string) error {
 }
 
 func getServiceFilePath(serviceName string) string {
-	return fmt.Sprintf("/home/pi/.%s.version")
+	return fmt.Sprintf("/home/pi/.%s.version", serviceName)
 }
