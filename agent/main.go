@@ -45,9 +45,9 @@ func main() {
 		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
 	}
 
-	serverApiKey := os.Getenv("PI_APP_UPDATER_API_KEY")
+	serverApiKey := os.Getenv("PI_APP_DEPLOYER_API_KEY")
 	if serverApiKey == "" {
-		logger.Fatalln("PI_APP_UPDATER_API_KEY environment variable is required")
+		logger.Fatalln("PI_APP_DEPLOYER_API_KEY environment variable is required")
 	}
 
 	user := os.Getenv("CLOUDMQTT_AGENT_USER")

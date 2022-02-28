@@ -19,7 +19,7 @@ var runScriptTemplate string
 var serviceTemplate string
 
 //go:embed templates/pi-app-deployer-agent.tmpl
-var updaterTemplate string
+var deployerTemplate string
 
 type ServiceTemplateData struct {
 	Description     string
@@ -72,7 +72,7 @@ func EvalRunScriptTemplate(m manifest.Manifest) (string, error) {
 	return evalTemplate(runScriptTemplate, d)
 }
 
-func EvalUpdaterTemplate(cfg config.Config) (string, error) {
+func EvalDeployerTemplate(cfg config.Config) (string, error) {
 	var result error
 
 	if cfg.PackageName == "" {
@@ -86,7 +86,7 @@ func EvalUpdaterTemplate(cfg config.Config) (string, error) {
 		return "", result
 	}
 
-	return evalTemplate(updaterTemplate, cfg)
+	return evalTemplate(deployerTemplate, cfg)
 }
 
 func evalTemplate(templateFile string, d interface{}) (string, error) {

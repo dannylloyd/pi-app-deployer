@@ -20,12 +20,6 @@ type Artifact struct {
 	ArchiveDownloadURL string `json:"download_url"`
 }
 
-type ConfigFiles struct {
-	Systemd      string `json:"systemd"`
-	RunScript    string `json:"runScript"`
-	PiAppUpdater string `json:"piAppUpdater"`
-}
-
 type RenderTemplatesPayload struct {
 	Config   Config            `json:"config"`
 	Manifest manifest.Manifest `json:"manifest"`

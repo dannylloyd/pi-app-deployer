@@ -106,12 +106,12 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("rendering runscript template: %s", err)
 	}
 
-	updaterFile, err := file.EvalUpdaterTemplate(a.Config)
+	deployerFile, err := file.EvalDeployerTemplate(a.Config)
 	if err != nil {
-		return fmt.Errorf("rendering updater template: %s", err)
+		return fmt.Errorf("rendering deployer template: %s", err)
 	}
 
-	for _, t := range []string{serviceUnit, runScript, updaterFile} {
+	for _, t := range []string{serviceUnit, runScript, deployerFile} {
 		if t == "" {
 			return fmt.Errorf("one of the templates rendered was empty")
 		}
@@ -131,10 +131,10 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("writing run script: %s", err)
 	}
 
-	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", a.DownloadDirectory, "pi-app-deployer-agent.service")
-	err = os.WriteFile(updaterServiceFileOutputPath, []byte(updaterFile), 0644)
+	deployerServiceFileOutputPath := fmt.Sprintf("%s/%s", a.DownloadDirectory, "pi-app-deployer-agent.service")
+	err = os.WriteFile(deployerServiceFileOutputPath, []byte(deployerFile), 0644)
 	if err != nil {
-		return fmt.Errorf("writing updater service file: %s", err)
+		return fmt.Errorf("writing deployer service file: %s", err)
 	}
 
 	err = a.SystemdTool.StopSystemdUnit(m.Name)
@@ -146,10 +146,10 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 	packageBinaryOutputPath := fmt.Sprintf("%s/%s", piUserHomeDir, m.Executable)
 
 	var srcDestMap = map[string]string{
-		serviceFileOutputPath:        fmt.Sprintf("/etc/systemd/system/%s.service", m.Name),
-		runScriptOutputPath:          fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
-		tmpBinarypath:                packageBinaryOutputPath,
-		updaterServiceFileOutputPath: "/etc/systemd/system/pi-app-deployer-agent.service",
+		serviceFileOutputPath:         fmt.Sprintf("/etc/systemd/system/%s.service", m.Name),
+		runScriptOutputPath:           fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
+		tmpBinarypath:                 packageBinaryOutputPath,
+		deployerServiceFileOutputPath: "/etc/systemd/system/pi-app-deployer-agent.service",
 	}
 
 	err = file.CopyWithOwnership(srcDestMap)

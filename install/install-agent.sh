@@ -26,7 +26,7 @@ vars=$(curl -s -n https://api.heroku.com/apps/pi-app-deployer/config-vars \
   -H "Authorization: Bearer ${HEROKU_API_KEY}")
 
 reqVars="GH_API_TOKEN
-PI_APP_UPDATER_API_KEY
+PI_APP_DEPLOYER_API_KEY
 CLOUDMQTT_AGENT_USER
 CLOUDMQTT_AGENT_PASSWORD
 CLOUDMQTT_URL"

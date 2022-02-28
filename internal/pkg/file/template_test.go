@@ -40,12 +40,12 @@ Environment=HEROKU_API_KEY=abcdefg
 	assert.Equal(t, expectedServiceFile, serviceFile)
 }
 
-func Test_EvalUpdaterTemplate(t *testing.T) {
+func Test_EvalDeployerTemplate(t *testing.T) {
 	c := config.Config{
 		RepoName:    "andrewmarklloyd/pi-test",
 		PackageName: "pi-test-client",
 	}
-	serviceFile, err := EvalUpdaterTemplate(c)
+	serviceFile, err := EvalDeployerTemplate(c)
 	assert.NoError(t, err)
 
 	expectedServiceFile := `[Unit]
@@ -71,9 +71,9 @@ User=root
 	assert.Equal(t, expectedServiceFile, serviceFile)
 }
 
-func Test_EvalUpdaterTemplateErrs(t *testing.T) {
+func Test_EvalDeployerTemplateErrs(t *testing.T) {
 	c := config.Config{}
-	serviceFile, err := EvalUpdaterTemplate(c)
+	serviceFile, err := EvalDeployerTemplate(c)
 	assert.Empty(t, serviceFile)
 	expectedErr := `2 errors occurred:
 	* config package name is required

@@ -1,5 +1,5 @@
 {
-  "name": "Pi App Updater",
+  "name": "Pi App Deployer",
   "description": "Reacts to Github push events to trigger updates to Raspberry pi apps",
   "keywords": [
     "raspberry-pi",

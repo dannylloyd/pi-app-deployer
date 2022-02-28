@@ -11,7 +11,7 @@ Requires several environment variables:
     - CLOUDMQTT_AGENT_USER: Heroku provisioned cloudmqtt's read-only user
     - CLOUDMQTT_AGENT_PASSWORD: Heroku provisioned cloudmqtt's read-only password
     - CLOUDMQTT_URL: Heroku provisioned cloudmqtt's read-only domain and port
-- PI_APP_UPDATER_API_KEY: Pi App Updater server's API key. Required for posting and getting data from the server.
+- PI_APP_DEPLOYER_API_KEY: Pi App Deployer server's API key. Required for posting and getting data from the server.
 
 ```
 bash <(curl -s -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/andrewmarklloyd/pi-app-deployer/master/install/install-agent.sh?$(date +%s)=$(date +%s)")

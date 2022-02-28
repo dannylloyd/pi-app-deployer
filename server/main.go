@@ -52,7 +52,7 @@ func requireLogin(next http.Handler) http.Handler {
 }
 
 func isAuthenticated(req *http.Request) bool {
-	allowedApiKey := os.Getenv("PI_APP_UPDATER_API_KEY")
+	allowedApiKey := os.Getenv("PI_APP_DEPLOYER_API_KEY")
 	apiKey := req.Header.Get("api-key")
 	if apiKey == "" {
 		return false

@@ -2,18 +2,12 @@ package file
 
 import (
 	"archive/zip"
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
-	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 )
 
 func DownloadExtract(url, dlDir, ghApiToken string) error {
@@ -45,36 +39,6 @@ func DownloadExtract(url, dlDir, ghApiToken string) error {
 	defer resp.Body.Close()
 
 	return unzip(zip, dlDir)
-}
-
-func RenderTemplates(m manifest.Manifest, cfg config.Config, apiKey string) (config.ConfigFiles, error) {
-	p := config.RenderTemplatesPayload{
-		Config:   cfg,
-		Manifest: m,
-	}
-	c := config.ConfigFiles{}
-	postBody, _ := json.Marshal(p)
-	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPost, "https://pi-app-deployer.herokuapp.com/templates/render", bytes.NewBuffer(postBody))
-	if err != nil {
-		return c, err
-
-	}
-	req.Header.Add("api-key", apiKey)
-	resp, err := client.Do(req)
-	if err != nil {
-		return c, err
-	}
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return c, err
-	}
-	defer resp.Body.Close()
-
-	err = json.Unmarshal(data, &c)
-
-	return c, nil
 }
 
 func unzip(src, dest string) error {
