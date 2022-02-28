@@ -75,9 +75,6 @@ func EvalRunScriptTemplate(m manifest.Manifest) (string, error) {
 func EvalDeployerTemplate(cfg config.Config) (string, error) {
 	var result error
 
-	if cfg.PackageName == "" {
-		result = multierror.Append(result, fmt.Errorf("config package name is required"))
-	}
 	if cfg.RepoName == "" {
 		result = multierror.Append(result, fmt.Errorf("config repo name is required"))
 

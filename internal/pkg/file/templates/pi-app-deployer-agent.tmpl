@@ -9,7 +9,7 @@ WantedBy=multi-user.target
 
 [Service]
 EnvironmentFile=/home/pi/.pi-app-deployer-agent.env
-ExecStart=/home/pi/pi-app-deployer-agent --repo-name <<.RepoName>> --package-name <<.PackageName>>
+ExecStart=/home/pi/pi-app-deployer-agent --repo-name <<.RepoName>>
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
 StandardError=inherit

@@ -42,8 +42,7 @@ Environment=HEROKU_API_KEY=abcdefg
 
 func Test_EvalDeployerTemplate(t *testing.T) {
 	c := config.Config{
-		RepoName:    "andrewmarklloyd/pi-test",
-		PackageName: "pi-test-client",
+		RepoName: "andrewmarklloyd/pi-test",
 	}
 	serviceFile, err := EvalDeployerTemplate(c)
 	assert.NoError(t, err)
@@ -59,7 +58,7 @@ WantedBy=multi-user.target
 
 [Service]
 EnvironmentFile=/home/pi/.pi-app-deployer-agent.env
-ExecStart=/home/pi/pi-app-deployer-agent --repo-name andrewmarklloyd/pi-test --package-name pi-test-client
+ExecStart=/home/pi/pi-app-deployer-agent --repo-name andrewmarklloyd/pi-test
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
 StandardError=inherit
@@ -75,8 +74,7 @@ func Test_EvalDeployerTemplateErrs(t *testing.T) {
 	c := config.Config{}
 	serviceFile, err := EvalDeployerTemplate(c)
 	assert.Empty(t, serviceFile)
-	expectedErr := `2 errors occurred:
-	* config package name is required
+	expectedErr := `1 error occurred:
 	* config repo name is required
 
 `
