@@ -48,13 +48,10 @@ mv /tmp/pi-app-deployer-agent /home/pi/pi-app-deployer-agent
 echo "Enter the repo name including the org then press enter:"
 read repo
 
-echo "Enter the package name included in the artifact then press enter:"
-read package
-
 echo
 echo "Press enter to run the pi-app-deployer installer using the following command:"
 
-c="/home/pi/pi-app-deployer-agent --repo-name ${repo} --package-name ${package} --install"
+c="/home/pi/pi-app-deployer-agent --repo-name ${repo} --install"
 echo "${c}"
 read
 

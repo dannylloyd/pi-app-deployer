@@ -29,6 +29,7 @@ type Agent struct {
 }
 
 func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey, serverApiKey string, systemdTool file.SystemdTool, testMode bool) Agent {
+	dlDir := strings.ReplaceAll(cfg.RepoName, "/", "_")
 	return Agent{
 		Config:            cfg,
 		MqttClient:        client,
@@ -37,7 +38,7 @@ func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKe
 		ServerApiKey:      serverApiKey,
 		SystemdTool:       systemdTool,
 		TestMode:          testMode,
-		DownloadDirectory: strings.ReplaceAll(fmt.Sprintf("/tmp/%s", cfg.RepoName), "/", "_"),
+		DownloadDirectory: fmt.Sprintf("/tmp/%s", dlDir),
 	}
 }
 
