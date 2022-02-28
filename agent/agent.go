@@ -86,7 +86,12 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("getting manifest from directory %s: %s", a.DownloadDirectory, err)
 	}
 
-	serviceUnit, err := file.EvalServiceTemplate(m, a.HerokuAPIKey)
+	err = file.WriteServiceEnvFile(m, a.HerokuAPIKey)
+	if err != nil {
+		return fmt.Errorf("writing service file environment file: %s", err)
+	}
+
+	serviceUnit, err := file.EvalServiceTemplate(m)
 	if err != nil {
 		return fmt.Errorf("rendering service template: %s", err)
 	}

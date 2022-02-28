@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
 
@@ -29,7 +30,7 @@ type ServiceTemplateData struct {
 	TimeoutStartSec int
 	Restart         string
 	RestartSec      int
-	HerokuAPIKey    string
+	EnvironmentFile string
 }
 
 type RunScriptTemplateData struct {
@@ -41,14 +42,14 @@ type RunScriptTemplateData struct {
 	NewLine       string
 }
 
-func EvalServiceTemplate(m manifest.Manifest, herokuAPIKey string) (string, error) {
+func EvalServiceTemplate(m manifest.Manifest) (string, error) {
 	d := ServiceTemplateData{
 		Description:     m.Systemd.Unit.Description,
 		ExecStart:       getExecStartName(m),
 		TimeoutStartSec: m.Systemd.Service.TimeoutStartSec,
 		Restart:         m.Systemd.Service.Restart,
 		RestartSec:      m.Systemd.Service.RestartSec,
-		HerokuAPIKey:    herokuAPIKey,
+		EnvironmentFile: getServiceEnvFileName(m),
 	}
 
 	for _, a := range m.Systemd.Unit.After {
@@ -103,12 +104,24 @@ func evalTemplate(templateFile string, d interface{}) (string, error) {
 	return doc.String(), nil
 }
 
+func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey string) error {
+	err := os.WriteFile(getServiceEnvFileName(m), []byte(fmt.Sprintf("HEROKU_API_KEY=%s", herokuAPIKey)), 0644)
+	if err != nil {
+		return fmt.Errorf("writing service env file: %s", err)
+	}
+	return nil
+}
+
 func getExecStartName(m manifest.Manifest) string {
 	return fmt.Sprintf("/home/pi/run-%s.sh", m.Name)
 }
 
 func getBinaryPath(m manifest.Manifest) string {
 	return fmt.Sprintf("/home/pi/%s", m.Executable)
+}
+
+func getServiceEnvFileName(m manifest.Manifest) string {
+	return fmt.Sprintf("/home/pi/%s.env", m.Name)
 }
 
 func FromJSONCompliant(fileWithNewlines string) string {

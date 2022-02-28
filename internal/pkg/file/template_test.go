@@ -13,7 +13,7 @@ func Test_ServiceTemplate(t *testing.T) {
 	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml")
 	assert.NoError(t, err)
 
-	serviceFile, err := EvalServiceTemplate(m, "abcdefg")
+	serviceFile, err := EvalServiceTemplate(m)
 	assert.NoError(t, err)
 
 	expectedServiceFile := `[Unit]
@@ -27,6 +27,7 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 [Service]
+EnvironmentFile=/home/pi/sample-app.env
 ExecStart=/home/pi/run-sample-app.sh
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
@@ -35,7 +36,6 @@ TimeoutStartSec=7
 Restart=always
 RestartSec=23
 User=pi
-Environment=HEROKU_API_KEY=abcdefg
 `
 	assert.Equal(t, expectedServiceFile, serviceFile)
 }
