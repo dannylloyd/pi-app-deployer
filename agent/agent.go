@@ -102,7 +102,7 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("rendering service template: %s", err)
 	}
 
-	runScript, err := file.EvalRunScriptTemplate(m)
+	runScript, err := file.EvalRunScriptTemplate(m, artifact.SHA)
 	if err != nil {
 		return fmt.Errorf("rendering runscript template: %s", err)
 	}

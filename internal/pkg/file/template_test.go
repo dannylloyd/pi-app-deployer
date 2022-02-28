@@ -82,5 +82,43 @@ func Test_EvalDeployerTemplateErrs(t *testing.T) {
 }
 
 func Test_EvalRunScriptTemplate(t *testing.T) {
-	// TODO need to have heroku client as interface to implement mock API call
+	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml")
+	assert.NoError(t, err)
+
+	runScriptFile, err := EvalRunScriptTemplate(m, "b1946ac92492d2347c6235b4d2611184")
+	assert.NoError(t, err)
+
+	expectedRunScriptFile := `#!/bin/bash
+
+export APP_VERSION=b1946ac92492d2347c6235b4d2611184
+
+
+if [[ -z ${HEROKU_API_KEY} ]]; then
+  echo "HEROKU_API_KEY env var not set, exiting now"
+  exit 1
+fi
+
+vars=$(curl -s -n https://api.heroku.com/apps/sample-app-test/config-vars \
+  -H "Accept: application/vnd.heroku+json; version=3" \
+  -H "Authorization: Bearer ${HEROKU_API_KEY}")
+
+export CLOUDMQTT_URL=$(echo $vars | jq -r '.CLOUDMQTT_URL')
+if [[ -z ${CLOUDMQTT_URL} ]]; then
+  echo "CLOUDMQTT_URL env var not set, exiting now"
+  exit 1
+fi
+
+export LOG_LEVEL=$(echo $vars | jq -r '.LOG_LEVEL')
+if [[ -z ${LOG_LEVEL} ]]; then
+  echo "LOG_LEVEL env var not set, exiting now"
+  exit 1
+fi
+
+
+unset HEROKU_API_KEY
+
+/home/pi/sample-app
+`
+
+	assert.Equal(t, expectedRunScriptFile, runScriptFile)
 }

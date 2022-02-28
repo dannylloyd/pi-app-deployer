@@ -34,6 +34,7 @@ type ServiceTemplateData struct {
 
 type RunScriptTemplateData struct {
 	EnvVarKeys    []string
+	AppVersion    string
 	ExecStart     string
 	HerokuAppName string
 	BinaryPath    string
@@ -62,9 +63,10 @@ func EvalServiceTemplate(m manifest.Manifest, herokuAPIKey string) (string, erro
 	return evalTemplate(serviceTemplate, d)
 }
 
-func EvalRunScriptTemplate(m manifest.Manifest) (string, error) {
+func EvalRunScriptTemplate(m manifest.Manifest, version string) (string, error) {
 	d := RunScriptTemplateData{}
 	d.EnvVarKeys = m.Heroku.Env
+	d.AppVersion = version
 	d.ExecStart = getExecStartName(m)
 	d.HerokuAppName = m.Heroku.App
 	d.NewLine = "\n"
