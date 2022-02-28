@@ -23,7 +23,6 @@ type Agent struct {
 	HerokuAPIKey      string
 	ServerApiKey      string
 	TestMode          bool
-	VersionTool       file.VersionTool
 	SystemdTool       file.SystemdTool
 	DownloadDirectory string
 }
@@ -59,15 +58,6 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
 }
 
 func (a *Agent) handleInstall(artifact config.Artifact) error {
-	// todo: find a better way to check version
-	installed, version, err := a.VersionTool.AppInstalled()
-	if err != nil {
-		return fmt.Errorf("checking if app is installed already: %s", err)
-	}
-	if installed {
-		return fmt.Errorf(fmt.Sprintf("App already installed at version '%s', remove '--install' flag to check for updates", version))
-	}
-
 	url, err := github.GetDownloadURLWithRetries(artifact, true)
 	if err != nil {
 		logger.Fatalln(fmt.Errorf("getting download url for latest release: %s", err))
@@ -81,7 +71,6 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 		return err
 	}
 
-	// a.VersionTool.WriteCurrentVersion(artifact.SHA)
 	return nil
 }
 

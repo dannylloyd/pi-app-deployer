@@ -67,6 +67,21 @@ func (s SystemdTool) StopSystemdUnit(unitName string) error {
 	return nil
 }
 
+func (s SystemdTool) SystemdUnitEnabled(unitName string) (bool, error) {
+	cmd := exec.Command("systemctl", "is-enabled", unitName)
+	stderr, _ := cmd.StderrPipe()
+	if err := cmd.Start(); err != nil {
+		return false, err
+	}
+
+	notInstalledErr := fmt.Sprintf("Failed to get unit file state for %s: No such file or directory", unitName)
+
+	if strings.Contains(getStdErrText(stderr), notInstalledErr) {
+		return false, nil
+	}
+	return false, nil
+}
+
 func getStdErrText(stderr io.ReadCloser) string {
 	stdErrText := ""
 	scanner := bufio.NewScanner(stderr)

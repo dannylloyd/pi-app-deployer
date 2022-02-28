@@ -63,6 +63,14 @@ func main() {
 	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, sdTool, testMode)
 
 	if *install {
+		// todo: find a better way to check version
+		// installed, version, err := vTool.AppInstalled()
+		// if err != nil {
+		// 	logger.Fatalln("checking if app is installed already: %s", err)
+		// }
+		// if installed {
+		// 	logger.Fatalln(fmt.Sprintf("App already installed at version '%s', remove '--install' flag to check for updates", version))
+		// }
 		logger.Println("Installing application")
 		a := config.Artifact{
 			Repository: cfg.RepoName,
