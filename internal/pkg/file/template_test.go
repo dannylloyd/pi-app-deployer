@@ -117,7 +117,7 @@ fi
 
 unset HEROKU_API_KEY
 
-/home/pi/sample-app
+/home/pi/sample-app-agent
 `
 
 	assert.Equal(t, expectedRunScriptFile, runScriptFile)

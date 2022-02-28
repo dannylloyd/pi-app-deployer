@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -47,20 +48,17 @@ func (s SystemdTool) SetupSystemdUnits(unitName string) error {
 }
 
 func (s SystemdTool) StopSystemdUnit(unitName string) error {
-	cmd := exec.Command("systemctl", "is-enabled", unitName)
-	stderr, _ := cmd.StderrPipe()
-	if err := cmd.Start(); err != nil {
+	filename := fmt.Sprintf("/etc/systemd/system/%s.service", unitName)
+	_, err := os.ReadFile(filename)
+	if err != nil {
+		if err.Error() == fmt.Sprintf("open %s: no such file or directory", filename) {
+			// unit is not installed, it is considered stopped
+			return nil
+		}
 		return err
 	}
 
-	notInstalledErr := fmt.Sprintf("Failed to get unit file state for %s: No such file or directory", unitName)
-
-	// unit not intalled, it can be considered stopped
-	if strings.Contains(getStdErrText(stderr), notInstalledErr) {
-		return nil
-	}
-
-	_, err := exec.Command("systemctl", "stop", unitName).Output()
+	_, err = exec.Command("systemctl", "stop", unitName).Output()
 	if err != nil {
 		return fmt.Errorf("stopping systemd unit: %s", err)
 	}

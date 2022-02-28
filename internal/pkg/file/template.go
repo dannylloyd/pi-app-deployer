@@ -107,9 +107,8 @@ func getExecStartName(m manifest.Manifest) string {
 	return fmt.Sprintf("/home/pi/run-%s.sh", m.Name)
 }
 
-// TODO: this is not configurable, need to fix it
 func getBinaryPath(m manifest.Manifest) string {
-	return fmt.Sprintf("/home/pi/%s", m.Name)
+	return fmt.Sprintf("/home/pi/%s", m.Executable)
 }
 
 func FromJSONCompliant(fileWithNewlines string) string {

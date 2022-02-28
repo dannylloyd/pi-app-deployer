@@ -7,4 +7,4 @@ test:
 	go test -v ./...
 
 deploy-dev: build
-	scp pi-app-deployer-agent pi@${IP}:dev-pi-app-deployer
+	scp pi-app-deployer-agent pi@${IP}:dev-pi-app-deployer-agent
