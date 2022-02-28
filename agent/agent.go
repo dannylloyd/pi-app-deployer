@@ -118,14 +118,14 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		}
 	}
 
-	serviceFile := fmt.Sprintf("%s.service", a.Config.PackageName)
+	serviceFile := fmt.Sprintf("%s.service", m.Name)
 	serviceFileOutputPath := fmt.Sprintf("%s/%s", a.DownloadDirectory, serviceFile)
 	err = os.WriteFile(serviceFileOutputPath, []byte(serviceUnit), 0644)
 	if err != nil {
 		return fmt.Errorf("writing service file: %s", err)
 	}
 
-	runScriptFile := fmt.Sprintf("run-%s.sh", a.Config.PackageName)
+	runScriptFile := fmt.Sprintf("run-%s.sh", m.Name)
 	runScriptOutputPath := fmt.Sprintf("%s/%s", a.DownloadDirectory, runScriptFile)
 	err = os.WriteFile(runScriptOutputPath, []byte(runScript), 0644)
 	if err != nil {
