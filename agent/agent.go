@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/file"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/github"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 )
 
 const (
@@ -91,7 +91,7 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("downloading and extracting artifact: %s", err)
 	}
 
-	m, err := manifest.GetManifest(fmt.Sprintf("%s/.pi-app-updater.yaml", a.DownloadDirectory))
+	m, err := manifest.GetManifest(fmt.Sprintf("%s/.pi-app-deployer.yaml", a.DownloadDirectory))
 	if err != nil {
 		return fmt.Errorf("getting manifest from directory %s: %s", a.DownloadDirectory, err)
 	}
@@ -131,7 +131,7 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("writing run script: %s", err)
 	}
 
-	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", a.DownloadDirectory, "pi-app-updater-agent.service")
+	updaterServiceFileOutputPath := fmt.Sprintf("%s/%s", a.DownloadDirectory, "pi-app-deployer-agent.service")
 	err = os.WriteFile(updaterServiceFileOutputPath, []byte(updaterFile), 0644)
 	if err != nil {
 		return fmt.Errorf("writing updater service file: %s", err)
@@ -149,7 +149,7 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		serviceFileOutputPath:        fmt.Sprintf("/etc/systemd/system/%s.service", m.Name),
 		runScriptOutputPath:          fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
 		tmpBinarypath:                packageBinaryOutputPath,
-		updaterServiceFileOutputPath: "/etc/systemd/system/pi-app-updater-agent.service",
+		updaterServiceFileOutputPath: "/etc/systemd/system/pi-app-deployer-agent.service",
 	}
 
 	err = file.CopyWithOwnership(srcDestMap)

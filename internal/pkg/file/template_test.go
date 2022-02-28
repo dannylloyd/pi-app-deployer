@@ -3,8 +3,8 @@ package file
 import (
 	"testing"
 
-	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,7 +49,7 @@ func Test_EvalUpdaterTemplate(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedServiceFile := `[Unit]
-Description=pi-app-updater-agent
+Description=pi-app-deployer-agent
 After=network.target
 StartLimitInterval=300
 StartLimitBurst=10
@@ -58,8 +58,8 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 [Service]
-EnvironmentFile=/home/pi/.pi-app-updater-agent.env
-ExecStart=/home/pi/pi-app-updater-agent --repo-name andrewmarklloyd/pi-test --package-name pi-test-client
+EnvironmentFile=/home/pi/.pi-app-deployer-agent.env
+ExecStart=/home/pi/pi-app-deployer-agent --repo-name andrewmarklloyd/pi-test --package-name pi-test-client
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
 StandardError=inherit

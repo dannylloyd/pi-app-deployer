@@ -1,5 +1,5 @@
-name: pi-app-updater
+name: pi-app-deployer
 heroku:
-  app: pi-app-updater
+  app: pi-app-deployer
   env:
     - POLLING_PERIOD

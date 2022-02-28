@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 	gmux "github.com/gorilla/mux"
 )
 
-var logger = log.New(os.Stdout, "[Pi-App-Updater-Server] ", log.LstdFlags)
+var logger = log.New(os.Stdout, "[pi-app-deployer-Server] ", log.LstdFlags)
 
 var messageClient mqtt.MqttClient
 

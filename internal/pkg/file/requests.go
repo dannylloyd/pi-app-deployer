@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 )
 
 func DownloadExtract(url, dlDir, ghApiToken string) error {
@@ -55,7 +55,7 @@ func RenderTemplates(m manifest.Manifest, cfg config.Config, apiKey string) (con
 	c := config.ConfigFiles{}
 	postBody, _ := json.Marshal(p)
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPost, "https://pi-app-updater.herokuapp.com/templates/render", bytes.NewBuffer(postBody))
+	req, err := http.NewRequest(http.MethodPost, "https://pi-app-deployer.herokuapp.com/templates/render", bytes.NewBuffer(postBody))
 	if err != nil {
 		return c, err
 

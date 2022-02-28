@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
 )
 
 const (

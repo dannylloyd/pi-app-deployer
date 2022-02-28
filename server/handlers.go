@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 )
 
 func handleRepoPush(w http.ResponseWriter, r *http.Request) {

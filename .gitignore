@@ -1,9 +1,9 @@
 .latestVersion
 .version
 .DS_Store
-pi-app-updater
+pi-app-deployer
 util.sh
 *.version
 .env
-pi-app-updater-agent
-pi-app-updater-server
+pi-app-deployer-agent
+pi-app-deployer-server

@@ -1,4 +1,4 @@
-module github.com/andrewmarklloyd/pi-app-updater
+module github.com/andrewmarklloyd/pi-app-deployer
 
 // +heroku goVersion go1.16
 go 1.16

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/andrewmarklloyd/pi-app-updater/api/v1/manifest"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/hashicorp/go-multierror"
 )
 
@@ -18,7 +18,7 @@ var runScriptTemplate string
 //go:embed templates/service.tmpl
 var serviceTemplate string
 
-//go:embed templates/pi-app-updater-agent.tmpl
+//go:embed templates/pi-app-deployer-agent.tmpl
 var updaterTemplate string
 
 type ServiceTemplateData struct {

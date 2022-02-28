@@ -5,7 +5,7 @@
     "raspberry-pi",
     "golang"
   ],
-  "repository": "https://github.com/andrewmarklloyd/pi-app-updater",
+  "repository": "https://github.com/andrewmarklloyd/pi-app-deployer",
   "env": {
     "GOVERSION": {
       "description": "Heroku does not support setting go version in go.mod",

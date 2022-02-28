@@ -8,12 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/file"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/mqtt"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/file"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 )
 
-var logger = log.New(os.Stdout, "[Pi-App-Updater-Agent] ", log.LstdFlags)
+var logger = log.New(os.Stdout, "[pi-app-deployer-Agent] ", log.LstdFlags)
 
 func main() {
 	// todo: support multiple repos and packages

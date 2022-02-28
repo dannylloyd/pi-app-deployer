@@ -3,7 +3,7 @@
 set -euo pipefail
 
 get_latest_release() {
-  curl --silent "https://api.github.com/repos/andrewmarklloyd/pi-app-updater/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+  curl --silent "https://api.github.com/repos/andrewmarklloyd/pi-app-deployer/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
 }
 
 if [[ $(whoami) != "root" ]]; then
@@ -21,7 +21,7 @@ if ! command -v jq &> /dev/null; then
   sudo apt-get install jq -y
 fi
 
-vars=$(curl -s -n https://api.heroku.com/apps/pi-app-updater/config-vars \
+vars=$(curl -s -n https://api.heroku.com/apps/pi-app-deployer/config-vars \
   -H "Accept: application/vnd.heroku+json; version=3" \
   -H "Authorization: Bearer ${HEROKU_API_KEY}")
 
@@ -31,7 +31,7 @@ CLOUDMQTT_AGENT_USER
 CLOUDMQTT_AGENT_PASSWORD
 CLOUDMQTT_URL"
 
-envFile="/home/pi/.pi-app-updater-agent.env"
+envFile="/home/pi/.pi-app-deployer-agent.env"
 rm -f ${envFile}
 echo "HEROKU_API_KEY=${HEROKU_API_KEY}" > ${envFile}
 for key in ${reqVars}; do
@@ -41,9 +41,9 @@ for key in ${reqVars}; do
 done
 
 version=$(get_latest_release)
-curl -sL https://github.com/andrewmarklloyd/pi-app-updater/releases/download/${version}/pi-app-updater-agent-${version}-linux-arm.tar.gz | tar zx -C /tmp
+curl -sL https://github.com/andrewmarklloyd/pi-app-deployer/releases/download/${version}/pi-app-deployer-agent-${version}-linux-arm.tar.gz | tar zx -C /tmp
 
-mv /tmp/pi-app-updater-agent /home/pi/pi-app-updater-agent
+mv /tmp/pi-app-deployer-agent /home/pi/pi-app-deployer-agent
 
 echo "Enter the repo name including the org then press enter:"
 read repo
@@ -52,9 +52,9 @@ echo "Enter the package name included in the artifact then press enter:"
 read package
 
 echo
-echo "Press enter to run the pi-app-updater installer using the following command:"
+echo "Press enter to run the pi-app-deployer installer using the following command:"
 
-c="/home/pi/pi-app-updater-agent --repo-name ${repo} --package-name ${package} --install"
+c="/home/pi/pi-app-deployer-agent --repo-name ${repo} --package-name ${package} --install"
 echo "${c}"
 read
 

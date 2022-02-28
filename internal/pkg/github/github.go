@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/google/go-github/v42/github"
 )
 

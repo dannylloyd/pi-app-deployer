@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 )
 
 const (
@@ -34,7 +34,7 @@ func (s SystemdTool) SetupSystemdUnits(unitName string) error {
 	}
 
 	// todo: better error handling
-	startCmd := exec.Command("systemctl", "start", "pi-app-updater-agent")
+	startCmd := exec.Command("systemctl", "start", "pi-app-deployer-agent")
 	stderr, pipeErr := startCmd.StderrPipe()
 	if pipeErr != nil {
 		return pipeErr
