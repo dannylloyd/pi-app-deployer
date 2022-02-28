@@ -121,7 +121,7 @@ func getBinaryPath(m manifest.Manifest) string {
 }
 
 func getServiceEnvFileName(m manifest.Manifest) string {
-	return fmt.Sprintf("/home/pi/%s.env", m.Name)
+	return fmt.Sprintf("/home/pi/.%s.env", m.Name)
 }
 
 func FromJSONCompliant(fileWithNewlines string) string {

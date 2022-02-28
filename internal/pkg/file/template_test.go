@@ -27,7 +27,7 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 [Service]
-EnvironmentFile=/home/pi/sample-app.env
+EnvironmentFile=/home/pi/.sample-app.env
 ExecStart=/home/pi/run-sample-app.sh
 WorkingDirectory=/home/pi/
 StandardOutput=inherit
