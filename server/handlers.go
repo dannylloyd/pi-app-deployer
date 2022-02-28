@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/config"
-	"github.com/andrewmarklloyd/pi-app-updater/internal/pkg/github"
 )
 
 func handleRepoPush(w http.ResponseWriter, r *http.Request) {
@@ -34,14 +33,6 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", a.Repository))
-
-	url, err := github.GetDownloadURLWithRetries(a, false)
-	if err != nil {
-		logger.Println(err)
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
-		return
-	}
-	a.ArchiveDownloadURL = url
 
 	json, err := json.Marshal(a)
 

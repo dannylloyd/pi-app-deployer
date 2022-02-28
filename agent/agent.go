@@ -42,9 +42,14 @@ func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKe
 }
 
 func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
-	logger.Println(fmt.Sprintf("Received message on topic %s:", config.RepoPushTopic), artifact.Repository)
+	logger.Println(fmt.Sprintf("updating app for repository %s", artifact.Repository))
 
-	err := a.installApp(artifact)
+	url, err := github.GetDownloadURLWithRetries(artifact, false)
+	if err != nil {
+		return err
+	}
+	artifact.ArchiveDownloadURL = url
+	err = a.installOrUdpdateApp(artifact)
 	if err != nil {
 		return err
 	}
@@ -70,7 +75,7 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 	artifact.SHA = "HEAD"
 	artifact.ArchiveDownloadURL = url
 
-	err = a.installApp(artifact)
+	err = a.installOrUdpdateApp(artifact)
 	if err != nil {
 		return err
 	}
@@ -79,7 +84,7 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 	return nil
 }
 
-func (a *Agent) installApp(artifact config.Artifact) error {
+func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 
 	err := file.DownloadExtract(artifact.ArchiveDownloadURL, a.DownloadDirectory, a.GHApiToken)
 	if err != nil {
