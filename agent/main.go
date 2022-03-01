@@ -18,21 +18,22 @@ var logger = log.New(os.Stdout, "[pi-app-deployer-Agent] ", log.LstdFlags)
 func main() {
 	// todo: support multiple repos and packages
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
+	manifestName := flag.String("manifest-name", "", "Name of the pi-app-deployer manifest")
 	install := flag.Bool("install", false, "First time install of the application")
+	logForwarding := flag.Bool("log-forwarding", false, "Send application logs to server")
 	flag.Parse()
-
-	var testMode bool
-	if os.Getenv("TEST_MODE") == "true" {
-		testMode = true
-		logger.Println("*** Running in test mode ***")
-	}
 
 	if *repoName == "" {
 		logger.Fatalln("repo-name is required")
 	}
 
+	if *manifestName == "" {
+		logger.Fatalln("manifest-name is required")
+	}
+
 	cfg := config.Config{
-		RepoName: *repoName,
+		RepoName:     *repoName,
+		ManifestName: *manifestName,
 	}
 
 	ghApiToken := os.Getenv("GH_API_TOKEN")
@@ -60,7 +61,7 @@ func main() {
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 
 	sdTool := file.NewSystemdTool(cfg)
-	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, sdTool, testMode)
+	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, sdTool)
 
 	if *install {
 		// todo: find a better way to check version
@@ -99,6 +100,10 @@ func main() {
 			}
 		}
 	})
+
+	if *logForwarding {
+		agent.startLogForwarder(cfg.ManifestName)
+	}
 
 	go forever()
 	select {} // block forever

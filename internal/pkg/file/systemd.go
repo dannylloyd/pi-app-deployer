@@ -80,6 +80,33 @@ func (s SystemdTool) SystemdUnitEnabled(unitName string) (bool, error) {
 	return false, nil
 }
 
+func (s SystemdTool) TailSystemdLogs(systemdUnit string, ch chan string) error {
+	cmd := exec.Command("journalctl", "-u", systemdUnit, "-f", "-n 0")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	buf := make([]byte, 1024)
+	for {
+		n, err := stdout.Read(buf)
+		if err != nil {
+			break
+		}
+
+		ch <- string(buf[0:n])
+	}
+	close(ch)
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func getStdErrText(stderr io.ReadCloser) string {
 	stdErrText := ""
 	scanner := bufio.NewScanner(stderr)

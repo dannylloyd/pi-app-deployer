@@ -22,12 +22,11 @@ type Agent struct {
 	GHApiToken        string
 	HerokuAPIKey      string
 	ServerApiKey      string
-	TestMode          bool
 	SystemdTool       file.SystemdTool
 	DownloadDirectory string
 }
 
-func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey, serverApiKey string, systemdTool file.SystemdTool, testMode bool) Agent {
+func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKey, serverApiKey string, systemdTool file.SystemdTool) Agent {
 	dlDir := strings.ReplaceAll(cfg.RepoName, "/", "_")
 	return Agent{
 		Config:            cfg,
@@ -36,7 +35,6 @@ func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKe
 		HerokuAPIKey:      herokuAPIKey,
 		ServerApiKey:      serverApiKey,
 		SystemdTool:       systemdTool,
-		TestMode:          testMode,
 		DownloadDirectory: fmt.Sprintf("/tmp/%s", dlDir),
 	}
 }
@@ -167,4 +165,17 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("%s", err)
 	}
 	return nil
+}
+
+func (a *Agent) startLogForwarder(unitName string) {
+	ch := make(chan string)
+	go a.SystemdTool.TailSystemdLogs(unitName, ch)
+	for logs := range ch {
+		logLines := strings.Split(strings.Replace(logs, "\n", `\n`, -1), `\n`)
+		for _, line := range logLines {
+			if line != "" {
+				fmt.Println(line)
+			}
+		}
+	}
 }

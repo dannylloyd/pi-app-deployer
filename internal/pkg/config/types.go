@@ -9,7 +9,8 @@ const (
 )
 
 type Config struct {
-	RepoName string
+	RepoName     string
+	ManifestName string
 }
 
 type Artifact struct {
