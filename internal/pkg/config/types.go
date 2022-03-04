@@ -18,6 +18,7 @@ type Artifact struct {
 	Repository         string `json:"repository"`
 	Name               string `json:"name"`
 	ArchiveDownloadURL string `json:"download_url"`
+	ManifestName       string `json:"manifest_name"`
 }
 
 type RenderTemplatesPayload struct {

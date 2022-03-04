@@ -74,7 +74,8 @@ func main() {
 		// }
 		logger.Println("Installing application")
 		a := config.Artifact{
-			Repository: cfg.RepoName,
+			Repository:   cfg.RepoName,
+			ManifestName: cfg.ManifestName,
 		}
 		err := agent.handleInstall(a)
 		if err != nil {

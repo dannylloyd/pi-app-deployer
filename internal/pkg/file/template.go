@@ -104,8 +104,10 @@ func evalTemplate(templateFile string, d interface{}) (string, error) {
 	return doc.String(), nil
 }
 
-func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey string) error {
-	err := os.WriteFile(getServiceEnvFileName(m), []byte(fmt.Sprintf("HEROKU_API_KEY=%s", herokuAPIKey)), 0644)
+func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey, version string) error {
+	envTemplate := `HEROKU_API_KEY=%s
+APP_VERSION=%s`
+	err := os.WriteFile(getServiceEnvFileName(m), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
 	if err != nil {
 		return fmt.Errorf("writing service env file: %s", err)
 	}
