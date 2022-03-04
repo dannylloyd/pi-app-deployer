@@ -83,7 +83,7 @@ func EvalDeployerTemplate(cfg config.Config) (string, error) {
 	}
 
 	if cfg.ManifestName == "" {
-		result = multierror.Append(result, fmt.Errorf("manifest name name is required"))
+		result = multierror.Append(result, fmt.Errorf("config manifest name is required"))
 	}
 
 	if result != nil {
