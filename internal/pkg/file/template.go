@@ -80,8 +80,12 @@ func EvalDeployerTemplate(cfg config.Config) (string, error) {
 
 	if cfg.RepoName == "" {
 		result = multierror.Append(result, fmt.Errorf("config repo name is required"))
-
 	}
+
+	if cfg.ManifestName == "" {
+		result = multierror.Append(result, fmt.Errorf("manifest name name is required"))
+	}
+
 	if result != nil {
 		return "", result
 	}
