@@ -7,17 +7,8 @@ import (
 	"strings"
 )
 
-type VersionTool struct {
-}
-
-func NewVersionTool() VersionTool {
-	v := VersionTool{}
-
-	return v
-}
-
-func (v VersionTool) AppInstalled(serviceName string) (bool, string, error) {
-	currentVersion, err := v.GetCurrentVersion(serviceName)
+func AppInstalled(serviceName string) (bool, string, error) {
+	currentVersion, err := GetCurrentVersion(serviceName)
 	if err == nil && currentVersion != "" {
 		return true, currentVersion, nil
 	}
@@ -27,7 +18,7 @@ func (v VersionTool) AppInstalled(serviceName string) (bool, string, error) {
 	return false, "", nil
 }
 
-func (v VersionTool) GetCurrentVersion(serviceName string) (string, error) {
+func GetCurrentVersion(serviceName string) (string, error) {
 	currentVersionBytes, err := ioutil.ReadFile(getServiceFilePath(serviceName))
 	if err != nil {
 		return "", fmt.Errorf("reading current version from file: %s", err)
@@ -35,7 +26,7 @@ func (v VersionTool) GetCurrentVersion(serviceName string) (string, error) {
 	return strings.TrimSuffix(string(currentVersionBytes), "\n"), nil
 }
 
-func (v VersionTool) WriteCurrentVersion(serviceName, version string) error {
+func WriteCurrentVersion(serviceName, version string) error {
 	err := ioutil.WriteFile(getServiceFilePath(serviceName), []byte(version), 0644)
 	if err != nil {
 		return err
@@ -48,7 +39,7 @@ func (v VersionTool) WriteCurrentVersion(serviceName, version string) error {
 	return nil
 }
 
-func (v VersionTool) Cleanup(serviceName string) error {
+func Cleanup(serviceName string) error {
 	err := os.Remove(getServiceFilePath(serviceName))
 	if err != nil && fmt.Sprintf("remove %s: no such file or directory", getServiceFilePath(serviceName)) != err.Error() {
 		return err

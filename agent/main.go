@@ -64,20 +64,21 @@ func main() {
 	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, sdTool)
 
 	if *install {
-		// todo: find a better way to check version
-		// installed, version, err := vTool.AppInstalled()
-		// if err != nil {
-		// 	logger.Fatalln("checking if app is installed already: %s", err)
-		// }
-		// if installed {
-		// 	logger.Fatalln(fmt.Sprintf("App already installed at version '%s', remove '--install' flag to check for updates", version))
-		// }
+		enabled, err := sdTool.SystemdUnitEnabled(cfg.ManifestName)
+		if err != nil {
+			logger.Fatalln("error checking if app is installed already: ", err)
+		}
+
+		if enabled {
+			logger.Fatalln("App already installed, remove '--install' flag to check for updates")
+		}
+
 		logger.Println("Installing application")
 		a := config.Artifact{
 			Repository:   cfg.RepoName,
 			ManifestName: cfg.ManifestName,
 		}
-		err := agent.handleInstall(a)
+		err = agent.handleInstall(a)
 		if err != nil {
 			logger.Fatalln(fmt.Errorf("failed installation: %s", err))
 		}
