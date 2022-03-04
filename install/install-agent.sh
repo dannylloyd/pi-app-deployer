@@ -48,10 +48,13 @@ mv /tmp/pi-app-deployer-agent /home/pi/pi-app-deployer-agent
 echo "Enter the repo name including the org then press enter:"
 read repo
 
+echo "Enter the pi-app-deployer manifest name then press enter:"
+read manifestName
+
 echo
 echo "Press enter to run the pi-app-deployer installer using the following command:"
 
-c="/home/pi/pi-app-deployer-agent --repo-name ${repo} --install"
+c="/home/pi/pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install"
 echo "${c}"
 read
 
