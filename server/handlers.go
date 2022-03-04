@@ -25,10 +25,10 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if a.Repository == "" || a.Name == "" || a.SHA == "" {
-		// todo: better error reporting to user
-		logger.Println("empty field(s) found in artifact:", a)
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
+	if a.Validate() != nil {
+		errs := fmt.Sprintf("error validating artifact: %s", a.Validate().Error())
+		logger.Println(errs)
+		http.Error(w, errs, http.StatusBadRequest)
 		return
 	}
 
