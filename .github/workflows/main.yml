@@ -19,11 +19,12 @@ jobs:
       run: make build
     - name: Test
       run: make test
-  # integration:
-  #   runs-on: ubuntu-20.04
-  #   steps:
-  #   - name: test
-  #     run: |
-  #       uname -a
-  #       echo running installer
-  #       echo testing
+  integration:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: test install
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      run: |
+        sudo HEROKU_API_KEY=${HEROKU_API_KEY} repo=andrewmarklloyd/pi-test manifestName=pi-test ./install/install-agent.sh
