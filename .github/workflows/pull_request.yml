@@ -22,5 +22,5 @@ jobs:
   integration:
     runs-on: debian:buster
     steps:
-    - uses: actions/checkout@v2
+    - name: test
       run: uname -a
