@@ -20,6 +20,10 @@ jobs:
     - name: Test
       run: make test
   integration:
-    runs-on: debian:buster
-    - uses: actions/checkout@v2
-      run: uname -a
+    runs-on: ubuntu-20.04
+    steps:
+    - name: test
+      run: |
+        uname -a
+        echo running installer
+        echo testing
