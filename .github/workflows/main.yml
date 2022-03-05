@@ -26,4 +26,6 @@ jobs:
     - name: test install
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      run: make test-integration
+      run: |
+        dpkg --print-architecture
+        make test-integration

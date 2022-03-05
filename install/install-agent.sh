@@ -3,6 +3,7 @@
 set -euo pipefail
 
 osRelease=$(cat /etc/os-release)
+arch=$(dpkg --print-architecture)
 if [[ "${osRelease}" == *"Raspbian"* ]]; then
   os="Raspbian"
   homeDir="/home/pi"
