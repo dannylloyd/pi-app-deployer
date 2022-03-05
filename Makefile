@@ -6,5 +6,7 @@ build:
 test:
 	go test -v ./...
 
+test-integration:
+	HEROKU_API_KEY=${HEROKU_API_KEY} repo=andrewmarklloyd/pi-test manifestName=pi-test ./install/install-agent.sh
 deploy-dev: build
 	scp pi-app-deployer-agent pi@${IP}:dev-pi-app-deployer-agent

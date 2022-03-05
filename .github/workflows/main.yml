@@ -26,5 +26,4 @@ jobs:
     - name: test install
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      run: |
-        sudo HEROKU_API_KEY=${HEROKU_API_KEY} repo=andrewmarklloyd/pi-test manifestName=pi-test ./install/install-agent.sh
+      run: make test-integration
