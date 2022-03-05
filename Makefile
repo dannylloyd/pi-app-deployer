@@ -7,6 +7,7 @@ test:
 	go test -v ./...
 
 test-integration:
-	sudo -E repo=andrewmarklloyd/pi-test manifestName=pi-test ./install/install-agent.sh
+	GOOS=linux GOARCH=amd64 GOARM=5 go build -o pi-app-deployer-agent agent/*
+	sudo -E repo=andrewmarklloyd/pi-test manifestName=pi-test ./test/test-integration.sh
 deploy-dev: build
 	scp pi-app-deployer-agent pi@${IP}:dev-pi-app-deployer-agent
