@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
 
-jobs:  
+jobs:
   build:
     runs-on: ubuntu-latest
     steps:
@@ -19,3 +19,7 @@ jobs:
       run: make build
     - name: Test
       run: make test
+  integration:
+    runs-on: debian:buster
+    - uses: actions/checkout@v2
+      run: uname -a
