@@ -2,6 +2,20 @@
 
 set -euo pipefail
 
+osRelease=$(cat /etc/os-release)
+if [[ "${osRelease}" == *"Raspbian"* ]]; then
+  os="Raspbian"
+  homeDir="/home/pi"
+  envFile="${homeDir}/.pi-app-deployer-agent.env"
+elif [[ "${osRelease}" == *"Ubuntu"* ]]; then
+  os="Ubuntu"
+  homeDir="/root"
+  envFile="${homeDir}/.pi-app-deployer-agent.env"
+else
+  echo "OS not supported"
+  exit 1
+fi
+
 get_latest_release() {
   curl --silent "https://api.github.com/repos/andrewmarklloyd/pi-app-deployer/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
 }
@@ -17,8 +31,13 @@ if [[ -z ${HEROKU_API_KEY} ]]; then
 fi
 
 if ! command -v jq &> /dev/null; then
-  sudo apt-get update
-  sudo apt-get install jq -y
+  apt-get update
+  apt-get install jq -y
+fi
+
+if ! command -v curl &> /dev/null; then
+  apt-get update
+  apt-get install curl -y
 fi
 
 vars=$(curl -s -n https://api.heroku.com/apps/pi-app-deployer/config-vars \
@@ -31,7 +50,6 @@ CLOUDMQTT_AGENT_USER
 CLOUDMQTT_AGENT_PASSWORD
 CLOUDMQTT_URL"
 
-envFile="/home/pi/.pi-app-deployer-agent.env"
 rm -f ${envFile}
 echo "HEROKU_API_KEY=${HEROKU_API_KEY}" > ${envFile}
 for key in ${reqVars}; do
@@ -43,7 +61,7 @@ done
 version=$(get_latest_release)
 curl -sL https://github.com/andrewmarklloyd/pi-app-deployer/releases/download/${version}/pi-app-deployer-agent-${version}-linux-arm.tar.gz | tar zx -C /tmp
 
-mv /tmp/pi-app-deployer-agent /home/pi/pi-app-deployer-agent
+mv /tmp/pi-app-deployer-agent ${homeDir}/pi-app-deployer-agent
 
 if [[ -z ${repo} && -z ${manifestName} ]]; then
   echo "Enter the repo name including the org then press enter:"
@@ -54,9 +72,9 @@ if [[ -z ${repo} && -z ${manifestName} ]]; then
 fi
 
 echo
-echo "Running the pi-app-deployer-agent installer using the following command:"
+echo "Running the pi-app-deployer-agent version ${version} installer using the following command:"
 
-c="/home/pi/pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install"
+c="${homeDir}/pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install"
 echo "${c}"
 
 eval ${c}
