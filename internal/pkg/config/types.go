@@ -3,13 +3,18 @@ package config
 import (
 	"fmt"
 
-	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
 	"github.com/hashicorp/go-multierror"
 )
 
 const (
-	RepoPushTopic = "repo/push"
+	RepoPushTopic     = "repo/push"
+	LogForwarderTopic = "logs"
 )
+
+type Log struct {
+	Message string `json:"message"`
+	Config  Config `json:"config"`
+}
 
 type Config struct {
 	RepoName     string
@@ -22,11 +27,6 @@ type Artifact struct {
 	Name               string `json:"name"`
 	ArchiveDownloadURL string `json:"download_url"`
 	ManifestName       string `json:"manifest_name"`
-}
-
-type RenderTemplatesPayload struct {
-	Config   Config            `json:"config"`
-	Manifest manifest.Manifest `json:"manifest"`
 }
 
 func (a Artifact) Validate() error {

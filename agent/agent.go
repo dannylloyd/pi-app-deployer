@@ -165,14 +165,14 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 	return nil
 }
 
-func (a *Agent) startLogForwarder(unitName string) {
+func (a *Agent) startLogForwarder(unitName string, f func(string)) {
 	ch := make(chan string)
 	go file.TailSystemdLogs(unitName, ch)
 	for logs := range ch {
 		logLines := strings.Split(strings.Replace(logs, "\n", `\n`, -1), `\n`)
 		for _, line := range logLines {
 			if line != "" {
-				fmt.Println(line)
+				f(line)
 			}
 		}
 	}

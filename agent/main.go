@@ -106,7 +106,18 @@ func main() {
 	})
 
 	if *logForwarding {
-		agent.startLogForwarder(cfg.ManifestName)
+		agent.startLogForwarder(cfg.ManifestName, func(log string) {
+			l := config.Log{
+				Message: log,
+				Config:  cfg,
+			}
+			json, err := json.Marshal(l)
+			if err != nil {
+				logger.Println(fmt.Sprintf("marshalling log forwarder message: %s", err))
+				return
+			}
+			agent.MqttClient.Publish("logs/submit", string(json))
+		})
 	}
 
 	go forever()

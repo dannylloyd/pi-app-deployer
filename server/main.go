@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 	gmux "github.com/gorilla/mux"
 )
@@ -18,7 +20,6 @@ func main() {
 	srvAddr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
 
 	// TODO: reusing another app's mqtt instance to save cost. Once viable MVP finished I can provision a dedicated instance
-	// TODO: read/write user is fine for this app, but clients will need read only
 	user := os.Getenv("CLOUDMQTT_USER")
 	pw := os.Getenv("CLOUDMQTT_PASSWORD")
 	url := os.Getenv("CLOUDMQTT_URL")
@@ -29,6 +30,15 @@ func main() {
 	if err != nil {
 		logger.Fatalln("connecting to mqtt: ", err)
 	}
+
+	messageClient.Subscribe(config.LogForwarderTopic, func(message string) {
+		var log config.Log
+		err := json.Unmarshal([]byte(message), &log)
+		if err != nil {
+			logger.Println(fmt.Sprintf("unmarshalling log forwarder message: %s", err))
+		}
+		fmt.Println(log)
+	})
 
 	router := gmux.NewRouter().StrictSlash(true)
 	router.Handle("/push", requireLogin(http.HandlerFunc(handleRepoPush))).Methods("POST")
