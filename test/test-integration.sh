@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+os="Ubuntu"
+homeDir="/root"
+envFile="${homeDir}/.pi-app-deployer-agent.env"
 
 if [[ $(whoami) != "root" ]]; then
   echo "Script must be run as root"
