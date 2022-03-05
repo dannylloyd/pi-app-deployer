@@ -85,7 +85,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	agent.MqttClient.Connect()
+	err := agent.MqttClient.Connect()
+	if err != nil {
+		logger.Fatalln("connecting to mqtt: ", err)
+	}
 
 	agent.MqttClient.Subscribe(config.RepoPushTopic, func(message string) {
 		var artifact config.Artifact

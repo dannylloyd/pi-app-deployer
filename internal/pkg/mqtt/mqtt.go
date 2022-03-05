@@ -40,11 +40,11 @@ func NewMQTTClient(addr string, logger log.Logger) MqttClient {
 	}
 }
 
-func (c MqttClient) Connect() {
+func (c MqttClient) Connect() error {
 	if token := c.client.Connect(); token.Wait() && token.Error() != nil {
-		// todo: return error instead of panic
-		panic(token.Error())
+		return token.Error()
 	}
+	return nil
 }
 
 func (c MqttClient) Cleanup() {
