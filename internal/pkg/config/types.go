@@ -19,6 +19,7 @@ type Log struct {
 type Config struct {
 	RepoName     string
 	ManifestName string
+	HomeDir      string
 }
 
 type Artifact struct {

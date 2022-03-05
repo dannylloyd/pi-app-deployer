@@ -13,7 +13,7 @@ func Test_ServiceTemplate(t *testing.T) {
 	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml")
 	assert.NoError(t, err)
 
-	serviceFile, err := EvalServiceTemplate(m)
+	serviceFile, err := EvalServiceTemplate(m, "/home/pi")
 	assert.NoError(t, err)
 
 	expectedServiceFile := `[Unit]
@@ -87,7 +87,7 @@ func Test_EvalRunScriptTemplate(t *testing.T) {
 	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml")
 	assert.NoError(t, err)
 
-	runScriptFile, err := EvalRunScriptTemplate(m, "b1946ac92492d2347c6235b4d2611184")
+	runScriptFile, err := EvalRunScriptTemplate(m, "b1946ac92492d2347c6235b4d2611184", "/home/pi")
 	assert.NoError(t, err)
 
 	expectedRunScriptFile := `#!/bin/bash

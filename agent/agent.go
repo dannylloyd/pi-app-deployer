@@ -12,10 +12,6 @@ import (
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 )
 
-const (
-	piUserHomeDir = "/home/pi"
-)
-
 type Agent struct {
 	Config            config.Config
 	MqttClient        mqtt.MqttClient
@@ -82,17 +78,17 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("getting manifest from directory %s: %s", a.DownloadDirectory, err)
 	}
 
-	err = file.WriteServiceEnvFile(m, a.HerokuAPIKey, artifact.SHA)
+	err = file.WriteServiceEnvFile(m, a.HerokuAPIKey, artifact.SHA, a.Config.HomeDir)
 	if err != nil {
 		return fmt.Errorf("writing service file environment file: %s", err)
 	}
 
-	serviceUnit, err := file.EvalServiceTemplate(m)
+	serviceUnit, err := file.EvalServiceTemplate(m, a.Config.HomeDir)
 	if err != nil {
 		return fmt.Errorf("rendering service template: %s", err)
 	}
 
-	runScript, err := file.EvalRunScriptTemplate(m, artifact.SHA)
+	runScript, err := file.EvalRunScriptTemplate(m, artifact.SHA, a.Config.HomeDir)
 	if err != nil {
 		return fmt.Errorf("rendering runscript template: %s", err)
 	}
@@ -134,11 +130,11 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 	}
 
 	tmpBinarypath := fmt.Sprintf("%s/%s", a.DownloadDirectory, m.Executable)
-	packageBinaryOutputPath := fmt.Sprintf("%s/%s", piUserHomeDir, m.Executable)
+	packageBinaryOutputPath := fmt.Sprintf("%s/%s", a.Config.HomeDir, m.Executable)
 
 	var srcDestMap = map[string]string{
 		serviceFileOutputPath:         fmt.Sprintf("/etc/systemd/system/%s.service", m.Name),
-		runScriptOutputPath:           fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile),
+		runScriptOutputPath:           fmt.Sprintf("%s/%s", a.Config.HomeDir, runScriptFile),
 		tmpBinarypath:                 packageBinaryOutputPath,
 		deployerServiceFileOutputPath: "/etc/systemd/system/pi-app-deployer-agent.service",
 	}
@@ -148,7 +144,7 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return err
 	}
 
-	err = file.MakeExecutable([]string{fmt.Sprintf("%s/%s", piUserHomeDir, runScriptFile), packageBinaryOutputPath})
+	err = file.MakeExecutable([]string{fmt.Sprintf("%s/%s", a.Config.HomeDir, runScriptFile), packageBinaryOutputPath})
 	if err != nil {
 		return err
 	}

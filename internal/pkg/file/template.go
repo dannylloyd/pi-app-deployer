@@ -42,14 +42,14 @@ type RunScriptTemplateData struct {
 	NewLine       string
 }
 
-func EvalServiceTemplate(m manifest.Manifest) (string, error) {
+func EvalServiceTemplate(m manifest.Manifest, homeDir string) (string, error) {
 	d := ServiceTemplateData{
 		Description:     m.Systemd.Unit.Description,
-		ExecStart:       getExecStartName(m),
+		ExecStart:       getExecStartName(m, homeDir),
 		TimeoutStartSec: m.Systemd.Service.TimeoutStartSec,
 		Restart:         m.Systemd.Service.Restart,
 		RestartSec:      m.Systemd.Service.RestartSec,
-		EnvironmentFile: getServiceEnvFileName(m),
+		EnvironmentFile: getServiceEnvFileName(m, homeDir),
 	}
 
 	for _, a := range m.Systemd.Unit.After {
@@ -64,14 +64,14 @@ func EvalServiceTemplate(m manifest.Manifest) (string, error) {
 	return evalTemplate(serviceTemplate, d)
 }
 
-func EvalRunScriptTemplate(m manifest.Manifest, version string) (string, error) {
+func EvalRunScriptTemplate(m manifest.Manifest, version, homeDir string) (string, error) {
 	d := RunScriptTemplateData{}
 	d.EnvVarKeys = m.Heroku.Env
 	d.AppVersion = version
-	d.ExecStart = getExecStartName(m)
+	d.ExecStart = getExecStartName(m, homeDir)
 	d.HerokuAppName = m.Heroku.App
 	d.NewLine = "\n"
-	d.BinaryPath = getBinaryPath(m)
+	d.BinaryPath = getBinaryPath(m, homeDir)
 	return evalTemplate(runScriptTemplate, d)
 }
 
@@ -108,26 +108,26 @@ func evalTemplate(templateFile string, d interface{}) (string, error) {
 	return doc.String(), nil
 }
 
-func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey, version string) error {
+func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey, version, homeDir string) error {
 	envTemplate := `HEROKU_API_KEY=%s
 APP_VERSION=%s`
-	err := os.WriteFile(getServiceEnvFileName(m), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
+	err := os.WriteFile(getServiceEnvFileName(m, homeDir), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
 	if err != nil {
 		return fmt.Errorf("writing service env file: %s", err)
 	}
 	return nil
 }
 
-func getExecStartName(m manifest.Manifest) string {
-	return fmt.Sprintf("/home/pi/run-%s.sh", m.Name)
+func getExecStartName(m manifest.Manifest, homeDir string) string {
+	return fmt.Sprintf("%s/run-%s.sh", homeDir, m.Name)
 }
 
-func getBinaryPath(m manifest.Manifest) string {
-	return fmt.Sprintf("/home/pi/%s", m.Executable)
+func getBinaryPath(m manifest.Manifest, homeDir string) string {
+	return fmt.Sprintf("%s/%s", homeDir, m.Executable)
 }
 
-func getServiceEnvFileName(m manifest.Manifest) string {
-	return fmt.Sprintf("/home/pi/.%s.env", m.Name)
+func getServiceEnvFileName(m manifest.Manifest, homeDir string) string {
+	return fmt.Sprintf("%s/.%s.env", homeDir, m.Name)
 }
 
 func FromJSONCompliant(fileWithNewlines string) string {

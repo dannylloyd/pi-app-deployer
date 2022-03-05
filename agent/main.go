@@ -31,9 +31,12 @@ func main() {
 		logger.Fatalln("manifest-name is required")
 	}
 
+	homeDir := os.Getenv("HOME")
+
 	cfg := config.Config{
 		RepoName:     *repoName,
 		ManifestName: *manifestName,
+		HomeDir:      homeDir,
 	}
 
 	ghApiToken := os.Getenv("GH_API_TOKEN")
