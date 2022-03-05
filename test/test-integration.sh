@@ -44,5 +44,5 @@ for key in ${reqVars}; do
   echo "${key}=${val}" >> ${envFile}
 done
 
-${homeDir}/pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install
+./pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install
 
