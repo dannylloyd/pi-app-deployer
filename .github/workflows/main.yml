@@ -19,11 +19,11 @@ jobs:
       run: make build
     - name: Test
       run: make test
-  integration:
-    runs-on: ubuntu-20.04
-    steps:
-    - name: test
-      run: |
-        uname -a
-        echo running installer
-        echo testing
+  # integration:
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #   - name: test
+  #     run: |
+  #       uname -a
+  #       echo running installer
+  #       echo testing
