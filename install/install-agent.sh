@@ -45,11 +45,13 @@ curl -sL https://github.com/andrewmarklloyd/pi-app-deployer/releases/download/${
 
 mv /tmp/pi-app-deployer-agent /home/pi/pi-app-deployer-agent
 
-echo "Enter the repo name including the org then press enter:"
-read repo
+if [[ -z ${repo} && -z ${manifestName} ]]; then
+  echo "Enter the repo name including the org then press enter:"
+  read repo
 
-echo "Enter the pi-app-deployer manifest name then press enter:"
-read manifestName
+  echo "Enter the pi-app-deployer manifest name then press enter:"
+  read manifestName
+fi
 
 echo
 echo "Running the pi-app-deployer-agent installer using the following command:"
