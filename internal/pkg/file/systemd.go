@@ -41,7 +41,7 @@ func SetupSystemdUnits(unitName string) error {
 func StopSystemdUnit(unitName string) error {
 	output, err := runSystemctlCommand("stop", unitName)
 	if err != nil {
-		notLoadedErr := fmt.Sprintf("Failed to stop %s.service: Unit pi-tes.service not loaded.\n", unitName)
+		notLoadedErr := fmt.Sprintf("Failed to stop %s.service: Unit %s.service not loaded.\n", unitName, unitName)
 		if output == notLoadedErr {
 			return nil
 		}
