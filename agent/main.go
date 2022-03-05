@@ -106,6 +106,7 @@ func main() {
 	})
 
 	if *logForwarding {
+		logger.Println(fmt.Sprintf("Log forwarding is enabled for %s", cfg.ManifestName))
 		agent.startLogForwarder(cfg.ManifestName, func(log string) {
 			l := config.Log{
 				Message: log,
@@ -116,7 +117,7 @@ func main() {
 				logger.Println(fmt.Sprintf("marshalling log forwarder message: %s", err))
 				return
 			}
-			agent.MqttClient.Publish("logs/submit", string(json))
+			agent.MqttClient.Publish(config.LogForwarderTopic, string(json))
 		})
 	}
 
