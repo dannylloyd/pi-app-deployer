@@ -60,11 +60,10 @@ func main() {
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, password, mqttURL)
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 
-	sdTool := file.NewSystemdTool(cfg)
-	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey, sdTool)
+	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey)
 
 	if *install {
-		enabled, err := sdTool.SystemdUnitEnabled(cfg.ManifestName)
+		enabled, err := file.SystemdUnitEnabled(cfg.ManifestName)
 		if err != nil {
 			logger.Fatalln("error checking if app is installed already: ", err)
 		}
