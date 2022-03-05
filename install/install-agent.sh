@@ -52,10 +52,9 @@ echo "Enter the pi-app-deployer manifest name then press enter:"
 read manifestName
 
 echo
-echo "Press enter to run the pi-app-deployer installer using the following command:"
+echo "Running the pi-app-deployer-agent installer using the following command:"
 
 c="/home/pi/pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install"
 echo "${c}"
-read
 
 eval ${c}
