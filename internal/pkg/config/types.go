@@ -20,6 +20,7 @@ type Config struct {
 	RepoName     string
 	ManifestName string
 	HomeDir      string
+	AppUser      string
 }
 
 type Artifact struct {

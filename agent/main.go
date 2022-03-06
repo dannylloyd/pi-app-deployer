@@ -19,6 +19,7 @@ func main() {
 	// todo: support multiple repos and packages
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
 	manifestName := flag.String("manifest-name", "", "Name of the pi-app-deployer manifest")
+	appUser := flag.String("app-user", "pi", "Name of user that will run the app service")
 	install := flag.Bool("install", false, "First time install of the application")
 	logForwarding := flag.Bool("log-forwarding", false, "Send application logs to server")
 	flag.Parse()
@@ -31,12 +32,14 @@ func main() {
 		logger.Fatalln("manifest-name is required")
 	}
 
+	// TODO: is this the best way? who is running the script?
 	homeDir := os.Getenv("HOME")
 
 	cfg := config.Config{
 		RepoName:     *repoName,
 		ManifestName: *manifestName,
 		HomeDir:      homeDir,
+		AppUser:      *appUser,
 	}
 
 	ghApiToken := os.Getenv("GH_API_TOKEN")

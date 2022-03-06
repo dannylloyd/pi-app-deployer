@@ -13,7 +13,7 @@ func Test_ServiceTemplate(t *testing.T) {
 	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml")
 	assert.NoError(t, err)
 
-	serviceFile, err := EvalServiceTemplate(m, "/home/pi")
+	serviceFile, err := EvalServiceTemplate(m, "/home/pi", "pi")
 	assert.NoError(t, err)
 
 	expectedServiceFile := `[Unit]
@@ -29,7 +29,7 @@ WantedBy=multi-user.target
 [Service]
 EnvironmentFile=/home/pi/.sample-app.env
 ExecStart=/home/pi/run-sample-app.sh
-WorkingDirectory=/home/pi/
+WorkingDirectory=/home/pi
 StandardOutput=inherit
 StandardError=inherit
 TimeoutStartSec=7
@@ -44,6 +44,8 @@ func Test_EvalDeployerTemplate(t *testing.T) {
 	c := config.Config{
 		RepoName:     "andrewmarklloyd/pi-test",
 		ManifestName: "pi-test",
+		HomeDir:      "/home/pi",
+		AppUser:      "pi",
 	}
 	serviceFile, err := EvalDeployerTemplate(c)
 	assert.NoError(t, err)
@@ -60,7 +62,7 @@ WantedBy=multi-user.target
 [Service]
 EnvironmentFile=/home/pi/.pi-app-deployer-agent.env
 ExecStart=/home/pi/pi-app-deployer-agent --repo-name andrewmarklloyd/pi-test --manifest-name pi-test
-WorkingDirectory=/home/pi/
+WorkingDirectory=/home/pi
 StandardOutput=inherit
 StandardError=inherit
 Restart=always

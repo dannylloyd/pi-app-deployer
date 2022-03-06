@@ -83,7 +83,7 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("writing service file environment file: %s", err)
 	}
 
-	serviceUnit, err := file.EvalServiceTemplate(m, a.Config.HomeDir)
+	serviceUnit, err := file.EvalServiceTemplate(m, a.Config.HomeDir, a.Config.AppUser)
 	if err != nil {
 		return fmt.Errorf("rendering service template: %s", err)
 	}

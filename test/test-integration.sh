@@ -2,8 +2,11 @@
 
 set -euo pipefail
 
+# TODO: move this to install script?
+
 os="Ubuntu"
-homeDir="/root"
+workDir="/home/runner/work/pi-app-deployer/pi-app-deployer"
+homeDir="/home/runner"
 envFile="${homeDir}/.pi-app-deployer-agent.env"
 
 if [[ $(whoami) != "root" ]]; then
@@ -44,5 +47,9 @@ for key in ${reqVars}; do
   echo "${key}=${val}" >> ${envFile}
 done
 
-./pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install
+mv ${workDir}/pi-app-deployer-agent ${homeDir}
+${homeDir}/pi-app-deployer-agent --app-user runneradmin --repo-name ${repo} --manifest-name ${manifestName} --install
 
+sleep 10
+systemctl is-active --quiet pi-app-deployer-agent.service
+systemctl is-active --quiet pi-test.service

@@ -11,10 +11,10 @@ WantedBy=multi-user.target
 [Service]
 EnvironmentFile=<<.EnvironmentFile>>
 ExecStart=<<.ExecStart>>
-WorkingDirectory=/home/pi/
+WorkingDirectory=<<.HomeDir>>
 StandardOutput=inherit
 StandardError=inherit
 TimeoutStartSec=<<.TimeoutStartSec>>
 Restart=<<.Restart>>
 RestartSec=<<.RestartSec>>
-User=pi
+User=<<.AppUser>>

@@ -31,6 +31,15 @@ type ServiceTemplateData struct {
 	Restart         string
 	RestartSec      int
 	EnvironmentFile string
+	HomeDir         string
+	AppUser         string
+}
+
+type DeployerTemplateData struct {
+	HomeDir         string
+	EnvironmentFile string
+	RepoName        string
+	ManifestName    string
 }
 
 type RunScriptTemplateData struct {
@@ -42,7 +51,7 @@ type RunScriptTemplateData struct {
 	NewLine       string
 }
 
-func EvalServiceTemplate(m manifest.Manifest, homeDir string) (string, error) {
+func EvalServiceTemplate(m manifest.Manifest, homeDir, user string) (string, error) {
 	d := ServiceTemplateData{
 		Description:     m.Systemd.Unit.Description,
 		ExecStart:       getExecStartName(m, homeDir),
@@ -50,6 +59,8 @@ func EvalServiceTemplate(m manifest.Manifest, homeDir string) (string, error) {
 		Restart:         m.Systemd.Service.Restart,
 		RestartSec:      m.Systemd.Service.RestartSec,
 		EnvironmentFile: getServiceEnvFileName(m, homeDir),
+		HomeDir:         homeDir,
+		AppUser:         user,
 	}
 
 	for _, a := range m.Systemd.Unit.After {
@@ -86,11 +97,18 @@ func EvalDeployerTemplate(cfg config.Config) (string, error) {
 		result = multierror.Append(result, fmt.Errorf("config manifest name is required"))
 	}
 
+	d := DeployerTemplateData{
+		EnvironmentFile: getDeployerEnvFileName(cfg.HomeDir),
+		RepoName:        cfg.RepoName,
+		ManifestName:    cfg.ManifestName,
+		HomeDir:         cfg.HomeDir,
+	}
+
 	if result != nil {
 		return "", result
 	}
 
-	return evalTemplate(deployerTemplate, cfg)
+	return evalTemplate(deployerTemplate, d)
 }
 
 func evalTemplate(templateFile string, d interface{}) (string, error) {
@@ -128,6 +146,10 @@ func getBinaryPath(m manifest.Manifest, homeDir string) string {
 
 func getServiceEnvFileName(m manifest.Manifest, homeDir string) string {
 	return fmt.Sprintf("%s/.%s.env", homeDir, m.Name)
+}
+
+func getDeployerEnvFileName(homeDir string) string {
+	return fmt.Sprintf("%s/.pi-app-deployer-agent.env", homeDir)
 }
 
 func FromJSONCompliant(fileWithNewlines string) string {
