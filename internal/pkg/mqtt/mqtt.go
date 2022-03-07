@@ -8,10 +8,6 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-const (
-	pushTopic = "repo/push"
-)
-
 type fn func(string)
 
 type MqttClient struct {

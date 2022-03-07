@@ -123,7 +123,10 @@ func main() {
 				logger.Println(fmt.Sprintf("marshalling log forwarder message: %s", err))
 				return
 			}
-			agent.MqttClient.Publish(config.LogForwarderTopic, string(json))
+			err = agent.MqttClient.Publish(config.LogForwarderTopic, string(json))
+			if err != nil {
+				logger.Println(fmt.Sprintf("error publishing log forwarding message: %s", err))
+			}
 		})
 	}
 
