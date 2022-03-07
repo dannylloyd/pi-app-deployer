@@ -34,6 +34,7 @@ func main() {
 
 	// TODO: is this the best way? who is running the script?
 	homeDir := os.Getenv("HOME")
+	logger.Println("Using home dir: ", homeDir)
 
 	cfg := config.Config{
 		RepoName:     *repoName,

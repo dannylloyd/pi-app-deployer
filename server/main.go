@@ -48,7 +48,7 @@ func main() {
 		Addr:    srvAddr,
 	}
 
-	log.Println("server started on ", srvAddr)
+	logger.Println("server started on ", srvAddr)
 	logger.Fatal(srv.ListenAndServe())
 }
 
