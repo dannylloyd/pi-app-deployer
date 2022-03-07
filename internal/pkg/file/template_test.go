@@ -10,7 +10,7 @@ import (
 
 func Test_ServiceTemplate(t *testing.T) {
 
-	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml")
+	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml", "sample-app")
 	assert.NoError(t, err)
 
 	serviceFile, err := EvalServiceTemplate(m, "/home/pi", "pi")
@@ -86,7 +86,7 @@ func Test_EvalDeployerTemplateErrs(t *testing.T) {
 }
 
 func Test_EvalRunScriptTemplate(t *testing.T) {
-	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml")
+	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml", "sample-app")
 	assert.NoError(t, err)
 
 	runScriptFile, err := EvalRunScriptTemplate(m, "b1946ac92492d2347c6235b4d2611184", "/home/pi")

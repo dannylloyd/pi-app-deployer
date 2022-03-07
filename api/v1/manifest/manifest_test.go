@@ -7,7 +7,7 @@ import (
 )
 
 func Test_FullyDefinedManifest(t *testing.T) {
-	m, err := GetManifest("../../../test/templates/fully-defined-manifest.yaml")
+	m, err := GetManifest("../../../test/templates/fully-defined-manifest.yaml", "sample-app")
 	if err != nil {
 		t.Error("getting fully defined manifest should not err, got ", err)
 	}
@@ -25,7 +25,7 @@ func Test_FullyDefinedManifest(t *testing.T) {
 }
 
 func Test_Defaults(t *testing.T) {
-	m, err := GetManifest("../../../test/templates/minimally-defined-manifest.yaml")
+	m, err := GetManifest("../../../test/templates/minimally-defined-manifest.yaml", "sample-app")
 	if err != nil {
 		t.Error("getting fully defined manifest should not err, got ", err)
 	}
@@ -43,16 +43,16 @@ func Test_Defaults(t *testing.T) {
 }
 
 func Test_IncorrectType(t *testing.T) {
-	_, err := GetManifest("../../../test/templates/incorrect-after-field-manifest.yaml")
+	_, err := GetManifest("../../../test/templates/incorrect-after-field-manifest.yaml", "sample-app")
 	if err == nil {
 		t.Error("getting manifest should err, got ", err)
 	}
-	assert.EqualError(t, err, "unmarshalling manifest yaml file: yaml: unmarshal errors:\n  line 10: cannot unmarshal !!str `a.service` into []string ")
+	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 10: cannot unmarshal !!str `a.service` into []string")
 }
 
 func Test_MissingField(t *testing.T) {
-	_, err := GetManifest("../../../test/templates/missing-field-manifest.yaml")
+	_, err := GetManifest("../../../test/templates/missing-field-manifest.yaml", "sample-app")
 
 	assert.NotNil(t, err, "getting manifest should return err")
-	assert.EqualError(t, err, "unmarshalling manifest yaml file: 3 errors occurred:\n\t* name field is required\n\t* executable field is required\n\t* heroku.app field is required\n\n ")
+	assert.EqualError(t, err, "3 errors occurred:\n\t* name field is required\n\t* executable field is required\n\t* heroku.app field is required\n\n")
 }

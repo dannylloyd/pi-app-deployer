@@ -73,7 +73,7 @@ func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("downloading and extracting artifact: %s", err)
 	}
 
-	m, err := manifest.GetManifest(fmt.Sprintf("%s/.pi-app-deployer.yaml", a.DownloadDirectory))
+	m, err := manifest.GetManifest(fmt.Sprintf("%s/.pi-app-deployer.yaml", a.DownloadDirectory), a.Config.ManifestName)
 	if err != nil {
 		return fmt.Errorf("getting manifest from directory %s: %s", a.DownloadDirectory, err)
 	}

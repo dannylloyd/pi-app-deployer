@@ -1,7 +1,9 @@
 package manifest
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 
 	"github.com/hashicorp/go-multierror"
@@ -53,18 +55,48 @@ func defaultSystemdUnitRequires() []string {
 	return []string{"systemd-journald.service"}
 }
 
-func GetManifest(path string) (Manifest, error) {
-	var m Manifest
+func GetManifest(path, manifestName string) (Manifest, error) {
+	var emptyManifest Manifest
 	yamlFile, err := ioutil.ReadFile(path)
 
 	if err != nil {
-		return m, fmt.Errorf("reading manifest yaml file: %s ", err)
+		return emptyManifest, fmt.Errorf("reading manifest yaml file: %s ", err)
 	}
-	err = yaml.Unmarshal(yamlFile, &m)
+
+	manifests := []Manifest{}
+	if err := unmarshalAllManifests(yamlFile, &manifests); err != nil {
+		return emptyManifest, err
+	}
+
+	err = checkDuplicateManifests(manifests)
 	if err != nil {
-		return m, fmt.Errorf("unmarshalling manifest yaml file: %s ", err)
+		return emptyManifest, err
 	}
-	return m, nil
+
+	for _, m := range manifests {
+		if m.Name == manifestName {
+			return m, nil
+		}
+	}
+
+	return emptyManifest, fmt.Errorf("did not find any manifest matching name '%s'", manifestName)
+}
+
+func unmarshalAllManifests(in []byte, out *[]Manifest) error {
+	r := bytes.NewReader(in)
+	decoder := yaml.NewDecoder(r)
+	for {
+		var m Manifest
+		if err := decoder.Decode(&m); err != nil {
+			// Break when there are no more documents to decode
+			if err != io.EOF {
+				return err
+			}
+			break
+		}
+		*out = append(*out, m)
+	}
+	return nil
 }
 
 func (m *Manifest) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -115,5 +147,17 @@ func (m *Manifest) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		m.Systemd.Unit.Description = m.Name
 	}
 
+	return nil
+}
+
+func checkDuplicateManifests(manifests []Manifest) error {
+	keys := make(map[string]bool)
+	for _, entry := range manifests {
+		if _, value := keys[entry.Name]; value {
+			return fmt.Errorf("found manifests with duplicate names: %s", entry.Name)
+		} else {
+			keys[entry.Name] = true
+		}
+	}
 	return nil
 }
