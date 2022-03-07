@@ -51,5 +51,7 @@ mv ${workDir}/pi-app-deployer-agent ${homeDir}
 ${homeDir}/pi-app-deployer-agent --app-user runneradmin --repo-name ${repo} --manifest-name ${manifestName} --install
 
 sleep 10
+journalctl -u pi-app-deployer-agent.service
+journalctl -u pi-test.service
 systemctl is-active --quiet pi-app-deployer-agent.service
 systemctl is-active --quiet pi-test.service
