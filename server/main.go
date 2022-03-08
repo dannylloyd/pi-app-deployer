@@ -13,6 +13,7 @@ import (
 )
 
 var logger = log.New(os.Stdout, "[pi-app-deployer-Server] ", log.LstdFlags)
+var forwarderLogger = log.New(os.Stdout, "[pi-app-deployer-Forwarder] ", log.LstdFlags)
 
 var messageClient mqtt.MqttClient
 
@@ -37,7 +38,8 @@ func main() {
 		if err != nil {
 			logger.Println(fmt.Sprintf("unmarshalling log forwarder message: %s", err))
 		}
-		fmt.Println(log)
+
+		forwarderLogger.Println(fmt.Sprintf("<%s_%s>: %s", log.Config.RepoName, log.Config.ManifestName, log.Message))
 	})
 
 	router := gmux.NewRouter().StrictSlash(true)
