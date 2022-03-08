@@ -3,19 +3,19 @@
 set -euo pipefail
 
 osRelease=$(cat /etc/os-release)
-arch=$(dpkg --print-architecture)
 if [[ "${osRelease}" == *"Raspbian"* ]]; then
   os="Raspbian"
   homeDir="/home/pi"
-  envFile="${homeDir}/.pi-app-deployer-agent.env"
+  arch="arm"
 elif [[ "${osRelease}" == *"Ubuntu"* ]]; then
   os="Ubuntu"
   homeDir="/root"
-  envFile="${homeDir}/.pi-app-deployer-agent.env"
+  arch="amd64"
 else
   echo "OS not supported"
   exit 1
 fi
+envFile="${homeDir}/.pi-app-deployer-agent.env"
 
 get_latest_release() {
   curl --silent "https://api.github.com/repos/andrewmarklloyd/pi-app-deployer/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
