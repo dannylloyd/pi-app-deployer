@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+repo=${repo:-}
+manifestName=${manifestName:-}
+
+
 osRelease=$(cat /etc/os-release)
 if [[ "${osRelease}" == *"Raspbian"* ]]; then
   os="Raspbian"
