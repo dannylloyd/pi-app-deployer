@@ -48,7 +48,7 @@ for key in ${reqVars}; do
 done
 
 mv ${workDir}/pi-app-deployer-agent ${homeDir}
-${homeDir}/pi-app-deployer-agent --app-user runneradmin --repo-name ${repo} --manifest-name ${manifestName} --install
+${homeDir}/pi-app-deployer-agent --app-user runneradmin --repo-name ${repo} --manifest-name ${manifestName} --home-dir ${homeDir} --install
 
 sleep 10
 journalctl -u pi-app-deployer-agent.service
