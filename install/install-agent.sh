@@ -64,6 +64,7 @@ for key in ${reqVars}; do
 done
 
 version=$(get_latest_release)
+echo "Downloading version ${version} of pi-app-deployer"
 curl -sL https://github.com/andrewmarklloyd/pi-app-deployer/releases/download/${version}/pi-app-deployer-agent-${version}-linux-${arch}.tar.gz | tar zx -C /tmp
 
 mv /tmp/pi-app-deployer-agent ${homeDir}/pi-app-deployer-agent
