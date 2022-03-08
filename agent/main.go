@@ -33,8 +33,6 @@ func main() {
 		logger.Fatalln("manifest-name is required")
 	}
 
-	logger.Println("Using home dir: ", homeDir)
-
 	cfg := config.Config{
 		RepoName:     *repoName,
 		ManifestName: *manifestName,
