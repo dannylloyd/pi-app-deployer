@@ -41,7 +41,7 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
 		return err
 	}
 	artifact.ArchiveDownloadURL = url
-	err = a.installOrUdpdateApp(artifact)
+	err = a.installOrUpdateApp(artifact)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 	artifact.SHA = "HEAD"
 	artifact.ArchiveDownloadURL = url
 
-	err = a.installOrUdpdateApp(artifact)
+	err = a.installOrUpdateApp(artifact)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (a *Agent) handleInstall(artifact config.Artifact) error {
 	return nil
 }
 
-func (a *Agent) installOrUdpdateApp(artifact config.Artifact) error {
+func (a *Agent) installOrUpdateApp(artifact config.Artifact) error {
 
 	err := file.DownloadExtract(artifact.ArchiveDownloadURL, a.DownloadDirectory, a.GHApiToken)
 	if err != nil {

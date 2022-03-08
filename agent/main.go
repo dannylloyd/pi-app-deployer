@@ -34,10 +34,11 @@ func main() {
 	}
 
 	cfg := config.Config{
-		RepoName:     *repoName,
-		ManifestName: *manifestName,
-		HomeDir:      *homeDir,
-		AppUser:      *appUser,
+		RepoName:      *repoName,
+		ManifestName:  *manifestName,
+		HomeDir:       *homeDir,
+		AppUser:       *appUser,
+		LogForwarding: *logForwarding,
 	}
 
 	ghApiToken := os.Getenv("GH_API_TOKEN")

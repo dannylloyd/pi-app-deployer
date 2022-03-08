@@ -2,8 +2,7 @@
 
 set -euo pipefail
 
-repo=${repo:-}
-manifestName=${manifestName:-}
+interactive=${interactive:-}
 
 
 osRelease=$(cat /etc/os-release)
@@ -69,18 +68,20 @@ curl -sL https://github.com/andrewmarklloyd/pi-app-deployer/releases/download/${
 
 mv /tmp/pi-app-deployer-agent ${homeDir}/pi-app-deployer-agent
 
-if [[ -z ${repo} && -z ${manifestName} ]]; then
+if [[ -z ${interactive} == "true" ]]; then
   echo "Enter the repo name including the org then press enter:"
   read repo
 
   echo "Enter the pi-app-deployer manifest name then press enter:"
   read manifestName
+
+  echo
+  echo "Running the pi-app-deployer-agent version ${version} installer using the following command:"
+
+  c="${homeDir}/pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install"
+  echo "${c}"
+
+  eval ${c}
+else
+  echo "pi-app-deployer-agent downloaded, run from ${homeDir}/pi-app-deployer-agent"
 fi
-
-echo
-echo "Running the pi-app-deployer-agent version ${version} installer using the following command:"
-
-c="${homeDir}/pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install"
-echo "${c}"
-
-eval ${c}

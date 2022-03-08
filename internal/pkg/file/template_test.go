@@ -126,3 +126,26 @@ unset HEROKU_API_KEY
 
 	assert.Equal(t, expectedRunScriptFile, runScriptFile)
 }
+
+func Test_Helpers(t *testing.T) {
+	c := config.Config{
+		RepoName:     "andrewmarklloyd/pi-test",
+		ManifestName: "pi-test",
+		HomeDir:      "/home/pi",
+		AppUser:      "pi",
+	}
+	expected := "/home/pi/pi-app-deployer-agent --repo-name andrewmarklloyd/pi-test --manifest-name pi-test"
+	actual := getDeployerExecStart(c)
+	assert.Equal(t, expected, actual)
+
+	c = config.Config{
+		RepoName:      "andrewmarklloyd/pi-test",
+		ManifestName:  "pi-test",
+		HomeDir:       "/home/pi",
+		AppUser:       "pi",
+		LogForwarding: true,
+	}
+	expected = "/home/pi/pi-app-deployer-agent --repo-name andrewmarklloyd/pi-test --manifest-name pi-test --log-forwarding"
+	actual = getDeployerExecStart(c)
+	assert.Equal(t, expected, actual)
+}

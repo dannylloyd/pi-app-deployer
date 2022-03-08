@@ -17,10 +17,11 @@ type Log struct {
 }
 
 type Config struct {
-	RepoName     string
-	ManifestName string
-	HomeDir      string
-	AppUser      string
+	RepoName      string
+	ManifestName  string
+	HomeDir       string
+	AppUser       string
+	LogForwarding bool
 }
 
 type Artifact struct {

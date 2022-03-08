@@ -40,6 +40,7 @@ type DeployerTemplateData struct {
 	EnvironmentFile string
 	RepoName        string
 	ManifestName    string
+	ExecStart       string
 }
 
 type RunScriptTemplateData struct {
@@ -99,9 +100,8 @@ func EvalDeployerTemplate(cfg config.Config) (string, error) {
 
 	d := DeployerTemplateData{
 		EnvironmentFile: getDeployerEnvFileName(cfg.HomeDir),
-		RepoName:        cfg.RepoName,
-		ManifestName:    cfg.ManifestName,
 		HomeDir:         cfg.HomeDir,
+		ExecStart:       getDeployerExecStart(cfg),
 	}
 
 	if result != nil {
@@ -138,6 +138,14 @@ APP_VERSION=%s`
 
 func getExecStartName(m manifest.Manifest, homeDir string) string {
 	return fmt.Sprintf("%s/run-%s.sh", homeDir, m.Name)
+}
+
+func getDeployerExecStart(cfg config.Config) string {
+	execStart := fmt.Sprintf("%s/pi-app-deployer-agent --repo-name %s --manifest-name %s", cfg.HomeDir, cfg.RepoName, cfg.ManifestName)
+	if cfg.LogForwarding {
+		execStart = fmt.Sprintf("%s --log-forwarding", execStart)
+	}
+	return execStart
 }
 
 func getBinaryPath(m manifest.Manifest, homeDir string) string {
