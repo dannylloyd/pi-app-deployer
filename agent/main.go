@@ -10,6 +10,7 @@ import (
 
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/file"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/heroku"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 )
 
@@ -41,27 +42,38 @@ func main() {
 		LogForwarding: *logForwarding,
 	}
 
-	ghApiToken := os.Getenv("GH_API_TOKEN")
-	if ghApiToken == "" {
-		logger.Fatalln("GH_API_TOKEN environment variable is required")
-	}
-
 	herokuAPIKey := os.Getenv("HEROKU_API_KEY")
 	if herokuAPIKey == "" {
 		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
 	}
 
-	serverApiKey := os.Getenv("PI_APP_DEPLOYER_API_KEY")
-	if serverApiKey == "" {
-		logger.Fatalln("PI_APP_DEPLOYER_API_KEY environment variable is required")
+	c := heroku.NewHerokuClient(herokuAPIKey)
+	envVars, err := c.GetEnvVars()
+
+	ghApiToken := envVars["GH_API_TOKEN"]
+	if ghApiToken == "" {
+		logger.Fatalln("GH_API_TOKEN environment variable not found from heroku")
 	}
 
-	user := os.Getenv("CLOUDMQTT_AGENT_USER")
-	password := os.Getenv("CLOUDMQTT_AGENT_PASSWORD")
-	mqttURL := os.Getenv("CLOUDMQTT_URL")
-	if user == "" || password == "" || mqttURL == "" {
-		logger.Fatalln("CLOUDMQTT_AGENT_USER, CLOUDMQTT_AGENT_PASSWORD, and CLOUDMQTT_URL environment variables are required")
+	serverApiKey := envVars["PI_APP_DEPLOYER_API_KEY"]
+	if serverApiKey == "" {
+		logger.Fatalln("PI_APP_DEPLOYER_API_KEY environment variable not found from heroku")
 	}
+
+	user := envVars["CLOUDMQTT_AGENT_USER"]
+	if user == "" {
+		logger.Fatalln("CLOUDMQTT_AGENT_USER environment variable not found from heroku")
+	}
+
+	password := envVars["CLOUDMQTT_AGENT_PASSWORD"]
+	if password == "" {
+		logger.Fatalln("CLOUDMQTT_AGENT_PASSWORD environment variable not found from heroku")
+	}
+	mqttURL := envVars["CLOUDMQTT_URL"]
+	if mqttURL == "" {
+		logger.Fatalln("CLOUDMQTT_URL environment variable not found from heroku")
+	}
+
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, password, mqttURL)
 	client := mqtt.NewMQTTClient(mqttAddr, *logger)
 
@@ -90,7 +102,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	err := agent.MqttClient.Connect()
+	err = agent.MqttClient.Connect()
 	if err != nil {
 		logger.Fatalln("connecting to mqtt: ", err)
 	}
