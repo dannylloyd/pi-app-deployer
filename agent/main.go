@@ -17,6 +17,10 @@ import (
 var logger = log.New(os.Stdout, "[pi-app-deployer-Agent] ", log.LstdFlags)
 
 func main() {
+	u := os.Getenv("USER")
+	if u != "root" {
+		logger.Fatalln("agent must be run as root, user found was", u)
+	}
 	// todo: support multiple repos and packages
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
 	manifestName := flag.String("manifest-name", "", "Name of the pi-app-deployer manifest")
