@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -172,4 +173,17 @@ func (a *Agent) startLogForwarder(unitName string, f func(string)) {
 			}
 		}
 	}
+}
+
+func (a *Agent) publishUpdateCondition(c config.UpdateCondition) error {
+	json, err := json.Marshal(c)
+	if err != nil {
+		return fmt.Errorf("marshalling update condition message: %s", err)
+	}
+
+	err = a.MqttClient.Publish(config.RepoPushStatusTopic, string(json))
+	if err != nil {
+		return fmt.Errorf("publishing update condition message: %s", err)
+	}
+	return nil
 }

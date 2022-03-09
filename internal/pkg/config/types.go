@@ -7,13 +7,25 @@ import (
 )
 
 const (
-	RepoPushTopic     = "repo/push"
-	LogForwarderTopic = "logs"
+	RepoPushTopic       = "repo/push"
+	LogForwarderTopic   = "logs"
+	RepoPushStatusTopic = "repo/push/status"
+
+	StatusUnknown    = "UNKNOWN"
+	StatusInProgress = "IN_PROGRESS"
+	StatusErr        = "ERROR"
+	StatusSuccess    = "SUCCESS"
 )
 
 type Log struct {
 	Message string `json:"message"`
 	Config  Config `json:"config"`
+}
+
+type UpdateCondition struct {
+	Status       string `json:"status"`
+	RepoName     string `json:"repoName"`
+	ManifestName string `json:"manifestName"`
 }
 
 type Config struct {

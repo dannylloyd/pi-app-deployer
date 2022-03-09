@@ -111,17 +111,39 @@ func main() {
 		logger.Fatalln("connecting to mqtt: ", err)
 	}
 
+	updateCondition := config.UpdateCondition{
+		RepoName:     cfg.RepoName,
+		ManifestName: cfg.ManifestName,
+	}
+
 	agent.MqttClient.Subscribe(config.RepoPushTopic, func(message string) {
 		var artifact config.Artifact
 		err := json.Unmarshal([]byte(message), &artifact)
 		if err != nil {
 			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
-		} else {
-			if artifact.Repository == cfg.RepoName {
-				err := agent.handleRepoUpdate(artifact)
+			return
+		}
+		if artifact.Repository == cfg.RepoName {
+			updateCondition.Status = config.StatusInProgress
+			err = agent.publishUpdateCondition(updateCondition)
+			if err != nil {
+				// log but don't block update from proceeding
+				logger.Println(err)
+			}
+			err := agent.handleRepoUpdate(artifact)
+			if err != nil {
+				logger.Println(err)
+				updateCondition.Status = config.StatusErr
+				err = agent.publishUpdateCondition(updateCondition)
 				if err != nil {
 					logger.Println(err)
 				}
+				return
+			}
+			updateCondition.Status = config.StatusSuccess
+			err = agent.publishUpdateCondition(updateCondition)
+			if err != nil {
+				logger.Println(err)
 			}
 		}
 	})

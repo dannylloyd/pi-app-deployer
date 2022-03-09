@@ -40,3 +40,6 @@ journalctl -u pi-app-deployer-agent.service
 journalctl -u pi-test-amd64.service
 systemctl is-active --quiet pi-app-deployer-agent.service
 systemctl is-active --quiet pi-test-amd64.service
+
+
+# git push to pi-test, check for new commit

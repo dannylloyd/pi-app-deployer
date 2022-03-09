@@ -42,6 +42,16 @@ func main() {
 		forwarderLogger.Println(fmt.Sprintf("<%s_%s>: %s", log.Config.RepoName, log.Config.ManifestName, log.Message))
 	})
 
+	messageClient.Subscribe(config.RepoPushStatusTopic, func(message string) {
+		var c config.UpdateCondition
+		err := json.Unmarshal([]byte(message), &c)
+		if err != nil {
+			logger.Println(fmt.Sprintf("unmarshalling update condition message: %s", err))
+		}
+		// TODO persist status, expose api to check status
+		logger.Println(fmt.Sprintf("<%s_%s> update status: %s", c.RepoName, c.ManifestName, c.Status))
+	})
+
 	router := gmux.NewRouter().StrictSlash(true)
 	router.Handle("/push", requireLogin(http.HandlerFunc(handleRepoPush))).Methods("POST")
 
