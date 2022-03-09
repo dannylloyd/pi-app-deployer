@@ -123,7 +123,8 @@ func main() {
 			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
 			return
 		}
-		if artifact.Repository == cfg.RepoName {
+		if artifact.Repository == cfg.RepoName && artifact.ManifestName == cfg.ManifestName {
+			logger.Println(fmt.Sprintf("updating repo %s with manifest name %s", cfg.RepoName, cfg.ManifestName))
 			updateCondition.Status = config.StatusInProgress
 			err = agent.publishUpdateCondition(updateCondition)
 			if err != nil {
