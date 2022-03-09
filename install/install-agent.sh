@@ -53,7 +53,7 @@ curl -sL https://github.com/andrewmarklloyd/pi-app-deployer/releases/download/${
 
 mv /tmp/pi-app-deployer-agent ${homeDir}/pi-app-deployer-agent
 
-if [[ -z ${interactive} == "true" ]]; then
+if [[ ${interactive} == "true" ]]; then
   echo "Enter the repo name including the org then press enter:"
   read repo
 
