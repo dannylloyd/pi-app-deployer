@@ -35,10 +35,9 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", a.Repository))
 
 	json, err := json.Marshal(a)
-
 	if err != nil {
 		logger.Println(err)
-		handleError(w, "an error occurred", http.StatusInternalServerError)
+		handleError(w, "error occurred marshalling json", http.StatusInternalServerError)
 		return
 	}
 	err = messageClient.Publish(config.RepoPushTopic, string(json))
@@ -46,6 +45,12 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 		logger.Println(err)
 		handleError(w, "Error publishing event", http.StatusInternalServerError)
 		return
+	}
+
+	key := fmt.Sprintf("%s/%s", a.Repository, a.ManifestName)
+	err = redisClient.WriteCondition(r.Context(), key, config.StatusInProgress)
+	if err != nil {
+		handleError(w, "Error setting deploy status", http.StatusBadRequest)
 	}
 
 	fmt.Fprintf(w, `{"status":"success"}`)
