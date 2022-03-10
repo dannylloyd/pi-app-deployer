@@ -72,10 +72,11 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: need to give better error reporting to api caller. They may have a typo in manifest or repo name
 	key := fmt.Sprintf("%s/%s", a.Repository, a.ManifestName)
 	c, err := redisClient.ReadCondition(r.Context(), key)
 	if err != nil {
-		logger.Println(err)
+		logger.Println("Error getting deploy status from redis:", err)
 		handleError(w, "Error getting deploy status", http.StatusBadRequest)
 		return
 	}
