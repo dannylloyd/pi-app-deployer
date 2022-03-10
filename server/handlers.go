@@ -76,12 +76,13 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 	c, err := redisClient.ReadCondition(r.Context(), key)
 	if err != nil {
 		handleError(w, "Error getting deploy status", http.StatusBadRequest)
+		return
 	}
 
 	if c == "" {
 		c = config.StatusUnknown
 	}
-	fmt.Fprintf(w, fmt.Sprintf(`{"status":"%s"}`, c))
+	fmt.Fprintf(w, fmt.Sprintf(`{"status":"success","condition":"%s"}`, c))
 }
 
 func handleError(w http.ResponseWriter, err string, statusCode int) {
