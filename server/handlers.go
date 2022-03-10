@@ -13,7 +13,8 @@ import (
 func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("error reading request body: err=%s\n", err)
+		logger.Println("error reading request body:", err)
+		http.Error(w, "Error publishing event", http.StatusInternalServerError)
 		return
 	}
 	defer r.Body.Close()
@@ -59,6 +60,21 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	logger.Println(string(data))
-	fmt.Fprintf(w, "{\"status\":\"IN_PROGRESS\"}")
+	var a config.Artifact
+	err = json.Unmarshal(data, &a)
+	if err != nil {
+		http.Error(w, "Error parsing request", http.StatusBadRequest)
+		return
+	}
+
+	key := fmt.Sprintf("%s/%s", a.Repository, a.ManifestName)
+	c, err := redisClient.ReadCondition(r.Context(), key)
+	if err != nil {
+		http.Error(w, "Error getting deploy status", http.StatusBadRequest)
+	}
+
+	if c == "" {
+		c = config.StatusUnknown
+	}
+	fmt.Fprintf(w, fmt.Sprintf(`{"status":"%s"}`, c))
 }

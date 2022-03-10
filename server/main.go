@@ -18,6 +18,7 @@ var logger = log.New(os.Stdout, "[pi-app-deployer-Server] ", log.LstdFlags)
 var forwarderLogger = log.New(os.Stdout, "[pi-app-deployer-Forwarder] ", log.LstdFlags)
 
 var messageClient mqtt.MqttClient
+var redisClient redis.Redis
 
 func main() {
 	srvAddr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
@@ -34,7 +35,7 @@ func main() {
 		logger.Fatalln("connecting to mqtt: ", err)
 	}
 
-	redisClient, err := redis.NewRedisClient(os.Getenv("REDIS_TLS_URL"))
+	redisClient, err = redis.NewRedisClient(os.Getenv("REDIS_TLS_URL"))
 	if err != nil {
 		logger.Fatalln("creating redis client:", err)
 	}
