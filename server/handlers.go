@@ -75,6 +75,7 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 	key := fmt.Sprintf("%s/%s", a.Repository, a.ManifestName)
 	c, err := redisClient.ReadCondition(r.Context(), key)
 	if err != nil {
+		logger.Println(err)
 		handleError(w, "Error getting deploy status", http.StatusBadRequest)
 		return
 	}
