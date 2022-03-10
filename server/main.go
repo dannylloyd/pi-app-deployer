@@ -69,6 +69,7 @@ func main() {
 
 	router := gmux.NewRouter().StrictSlash(true)
 	router.Handle("/push", requireLogin(http.HandlerFunc(handleRepoPush))).Methods("POST")
+	router.Handle("/deploy/status", requireLogin(http.HandlerFunc(handleDeployStatus))).Methods("GET")
 
 	srv := &http.Server{
 		Handler: router,

@@ -50,3 +50,15 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "{\"status\":\"success\"}")
 }
+
+func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("error reading request body: err=%s\n", err)
+		return
+	}
+	defer r.Body.Close()
+
+	logger.Println(string(data))
+	fmt.Fprintf(w, "{\"status\":\"IN_PROGRESS\"}")
+}
