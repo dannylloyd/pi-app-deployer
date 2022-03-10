@@ -141,6 +141,7 @@ func main() {
 				}
 				return
 			}
+			// TODO: should check systemctl status before sending success?
 			updateCondition.Status = config.StatusSuccess
 			err = agent.publishUpdateCondition(updateCondition)
 			if err != nil {

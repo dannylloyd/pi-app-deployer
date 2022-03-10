@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/redis"
 	gmux "github.com/gorilla/mux"
 )
 
@@ -32,6 +34,11 @@ func main() {
 		logger.Fatalln("connecting to mqtt: ", err)
 	}
 
+	redisClient, err := redis.NewRedisClient(os.Getenv("REDIS_TLS_URL"))
+	if err != nil {
+		logger.Fatalln("creating redis client:", err)
+	}
+
 	messageClient.Subscribe(config.LogForwarderTopic, func(message string) {
 		var log config.Log
 		err := json.Unmarshal([]byte(message), &log)
@@ -47,9 +54,17 @@ func main() {
 		err := json.Unmarshal([]byte(message), &c)
 		if err != nil {
 			logger.Println(fmt.Sprintf("unmarshalling update condition message: %s", err))
+			return
 		}
-		// TODO persist status, expose api to check status
-		logger.Println(fmt.Sprintf("<%s_%s> update status: %s", c.RepoName, c.ManifestName, c.Status))
+		logger.Println(fmt.Sprintf("<%s/%s> update status: %s", c.RepoName, c.ManifestName, c.Status))
+
+		key := fmt.Sprintf("%s/%s", c.RepoName, c.ManifestName)
+		value := c.Status
+		err = redisClient.WriteCondition(context.Background(), key, value)
+		if err != nil {
+			logger.Println(fmt.Sprintf("writing condition message to redis: %s", err))
+			return
+		}
 	})
 
 	router := gmux.NewRouter().StrictSlash(true)
