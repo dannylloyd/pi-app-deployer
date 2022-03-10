@@ -86,5 +86,5 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleError(w http.ResponseWriter, err string, statusCode int) {
-	http.Error(w, fmt.Sprintf(`{"status":"error","error","%s"}`, err), statusCode)
+	http.Error(w, fmt.Sprintf(`{"status":"error","error":"%s"}`, err), statusCode)
 }
