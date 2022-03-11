@@ -15,7 +15,7 @@ vars=$(curl -s -n https://api.heroku.com/apps/<<.HerokuAppName>>/config-vars \
 
 <<- range $key := .EnvVarKeys ->>
 export << $key >>=$(echo $vars | jq -r '.<< $key >>')
-if [[ -z ${<< $key >>} ]]; then
+if [[ -z ${<< $key >>} || ${<< $key >>} == 'null' ]]; then
   echo "<< $key >> env var not set, exiting now"
   exit 1
 fi<<$newline>>

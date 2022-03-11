@@ -107,13 +107,13 @@ vars=$(curl -s -n https://api.heroku.com/apps/sample-app-test/config-vars \
   -H "Authorization: Bearer ${HEROKU_API_KEY}")
 
 export CLOUDMQTT_URL=$(echo $vars | jq -r '.CLOUDMQTT_URL')
-if [[ -z ${CLOUDMQTT_URL} ]]; then
+if [[ -z ${CLOUDMQTT_URL} || ${CLOUDMQTT_URL} == 'null' ]]; then
   echo "CLOUDMQTT_URL env var not set, exiting now"
   exit 1
 fi
 
 export LOG_LEVEL=$(echo $vars | jq -r '.LOG_LEVEL')
-if [[ -z ${LOG_LEVEL} ]]; then
+if [[ -z ${LOG_LEVEL} || ${LOG_LEVEL} == 'null' ]]; then
   echo "LOG_LEVEL env var not set, exiting now"
   exit 1
 fi
