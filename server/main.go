@@ -57,7 +57,7 @@ func main() {
 			logger.Println(fmt.Sprintf("unmarshalling update condition message: %s", err))
 			return
 		}
-		logger.Println(fmt.Sprintf("<%s/%s> update status: %s", c.RepoName, c.ManifestName, c.Status))
+		logger.Println(fmt.Sprintf("<%s/%s> deploy condition: %s", c.RepoName, c.ManifestName, c.Status))
 
 		key := fmt.Sprintf("%s/%s", c.RepoName, c.ManifestName)
 		value := c.Status
