@@ -86,7 +86,7 @@ func requireLogin(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		if !isAuthenticated(req) {
 			logger.Println(fmt.Sprintf("Unauthenticated request, host: %s, headers: %s", req.Host, req.Header))
-			http.Error(w, "", http.StatusUnauthorized)
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, req)
