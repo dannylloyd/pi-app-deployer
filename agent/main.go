@@ -150,6 +150,29 @@ func main() {
 		}
 	})
 
+	agent.MqttClient.Subscribe(config.ServiceActionTopic, func(message string) {
+		var payload config.ServiceActionPayload
+		err := json.Unmarshal([]byte(message), &payload)
+		if err != nil {
+			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.ServiceActionTopic, err))
+			return
+		}
+		if payload.RepoName == cfg.RepoName && payload.ManifestName == cfg.ManifestName {
+			switch payload.Action {
+			case config.ServiceActionStart:
+				break
+			case config.ServiceActionStop:
+				err := file.StopSystemdUnit(payload.ManifestName)
+				if err != nil {
+					logger.Println(err)
+				}
+				break
+			case config.ServiceActionRestart:
+				break
+			}
+		}
+	})
+
 	if *logForwarding {
 		logger.Println(fmt.Sprintf("Log forwarding is enabled for %s", cfg.ManifestName))
 		agent.startLogForwarder(cfg.ManifestName, func(log string) {

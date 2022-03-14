@@ -91,6 +91,38 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, fmt.Sprintf(`{"status":"success","condition":"%s"}`, c))
 }
 
+func handleServicePost(w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logger.Println("error reading request body:", err)
+		handleError(w, "error reading request body", http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	var payload config.ServiceActionPayload
+	err = json.Unmarshal(data, &payload)
+	if err != nil {
+		handleError(w, "Error parsing request", http.StatusInternalServerError)
+		return
+	}
+
+	json, err := json.Marshal(payload)
+	if err != nil {
+		logger.Println(err)
+		handleError(w, "error occurred marshalling json", http.StatusInternalServerError)
+		return
+	}
+
+	err = messageClient.Publish(config.ServiceActionTopic, string(json))
+	if err != nil {
+		logger.Println(err)
+		handleError(w, "Error publishing event", http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(w, fmt.Sprintf(`{"status":"success"}`))
+}
+
 func handleError(w http.ResponseWriter, err string, statusCode int) {
 	http.Error(w, fmt.Sprintf(`{"status":"error","error":"%s"}`, err), statusCode)
 }

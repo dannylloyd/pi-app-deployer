@@ -6,15 +6,22 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+// todo: standardize repoName vs repository. also reuse some structs?
+
 const (
 	RepoPushTopic       = "repo/push"
 	LogForwarderTopic   = "logs"
 	RepoPushStatusTopic = "repo/push/status"
+	ServiceActionTopic  = "service"
 
 	StatusUnknown    = "UNKNOWN"
 	StatusInProgress = "IN_PROGRESS"
 	StatusErr        = "ERROR"
 	StatusSuccess    = "SUCCESS"
+
+	ServiceActionStart   = "START"
+	ServiceActionStop    = "STOP"
+	ServiceActionRestart = "RESTART"
 )
 
 type Log struct {
@@ -26,6 +33,12 @@ type UpdateCondition struct {
 	Status       string `json:"status"`
 	RepoName     string `json:"repoName"`
 	ManifestName string `json:"manifestName"`
+}
+
+type ServiceActionPayload struct {
+	RepoName     string `json:"repoName"`
+	ManifestName string `json:"manifestName"`
+	Action       string `json:"action"`
 }
 
 type Config struct {
