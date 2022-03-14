@@ -72,6 +72,13 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if a.Validate() != nil {
+		errs := fmt.Sprintf("error validating artifact: %s", a.Validate().Error())
+		logger.Println(errs)
+		handleError(w, errs, http.StatusBadRequest)
+		return
+	}
+
 	key := fmt.Sprintf("%s/%s", a.Repository, a.ManifestName)
 	c, err := redisClient.ReadCondition(r.Context(), key)
 
@@ -104,6 +111,13 @@ func handleServicePost(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(data, &payload)
 	if err != nil {
 		handleError(w, "Error parsing request", http.StatusInternalServerError)
+		return
+	}
+
+	if payload.Validate() != nil {
+		err := fmt.Sprintf("error validating payload: %s", payload.Validate().Error())
+		logger.Println(err)
+		handleError(w, err, http.StatusBadRequest)
 		return
 	}
 

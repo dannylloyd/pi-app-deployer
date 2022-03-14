@@ -50,6 +50,22 @@ func StopSystemdUnit(unitName string) error {
 	return nil
 }
 
+func StartSystemdUnit(unitName string) error {
+	output, err := runSystemctlCommand("start", unitName)
+	if err != nil {
+		return fmt.Errorf("stopping systemd unit: %s: %s", err, output)
+	}
+	return nil
+}
+
+func RestartSystemdUnit(unitName string) error {
+	output, err := runSystemctlCommand("start", unitName)
+	if err != nil {
+		return fmt.Errorf("stopping systemd unit: %s: %s", err, output)
+	}
+	return nil
+}
+
 func SystemdUnitEnabled(unitName string) (bool, error) {
 	output, err := runSystemctlCommand("is-enabled", unitName)
 	if err != nil {

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/go-multierror"
 )
@@ -76,5 +77,35 @@ func (a Artifact) Validate() error {
 		result = multierror.Append(result, fmt.Errorf("manifest_name field is required"))
 	}
 
-	return result
+	return toOnelineErr(result)
+}
+
+func (p ServiceActionPayload) Validate() error {
+	var result error
+
+	if p.RepoName == "" {
+		result = multierror.Append(result, fmt.Errorf("repoName field is required"))
+	}
+
+	if p.ManifestName == "" {
+		result = multierror.Append(result, fmt.Errorf("manifestName field is required"))
+	}
+
+	if p.Action == "" {
+		result = multierror.Append(result, fmt.Errorf("action field is required"))
+	} else {
+		if p.Action != ServiceActionStart && p.Action != ServiceActionStop && p.Action != ServiceActionRestart {
+			result = multierror.Append(result, fmt.Errorf("action must be one of: %s, %s, or %s, but was %s", ServiceActionStart, ServiceActionStop, ServiceActionRestart, p.Action))
+		}
+	}
+
+	return toOnelineErr(result)
+}
+
+func toOnelineErr(err error) error {
+	if err != nil {
+		errString := strings.ReplaceAll(err.Error(), "\t", `\t`)
+		return fmt.Errorf("%s", strings.ReplaceAll(errString, "\n", `\n`))
+	}
+	return nil
 }

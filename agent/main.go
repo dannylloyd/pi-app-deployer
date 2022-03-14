@@ -158,18 +158,26 @@ func main() {
 			return
 		}
 		if payload.RepoName == cfg.RepoName && payload.ManifestName == cfg.ManifestName {
+			logger.Println(fmt.Sprintf("Running service action %s on %s/%s", payload.Action, payload.RepoName, payload.ManifestName))
+			var err error
 			switch payload.Action {
 			case config.ServiceActionStart:
+				err = file.StartSystemdUnit(payload.ManifestName)
 				break
 			case config.ServiceActionStop:
-				err := file.StopSystemdUnit(payload.ManifestName)
-				if err != nil {
-					logger.Println(err)
-				}
+				err = file.StopSystemdUnit(payload.ManifestName)
 				break
 			case config.ServiceActionRestart:
+				err = file.RestartSystemdUnit(payload.ManifestName)
+				break
+			default:
+				err = fmt.Errorf("Action %s is not valid", payload.Action)
 				break
 			}
+			if err != nil {
+				logger.Println(err)
+			}
+
 		}
 	})
 
