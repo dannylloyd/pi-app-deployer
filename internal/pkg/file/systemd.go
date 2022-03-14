@@ -59,7 +59,7 @@ func StartSystemdUnit(unitName string) error {
 }
 
 func RestartSystemdUnit(unitName string) error {
-	output, err := runSystemctlCommand("start", unitName)
+	output, err := runSystemctlCommand("restart", unitName)
 	if err != nil {
 		return fmt.Errorf("stopping systemd unit: %s: %s", err, output)
 	}
