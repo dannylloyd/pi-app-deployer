@@ -12,7 +12,7 @@ func Test_ValidateArtifact(t *testing.T) {
 
 	validArtifact := Artifact{
 		SHA:          sha,
-		Repository:   "andrewmarklloyd/pi-test",
+		RepoName:     "andrewmarklloyd/pi-test",
 		Name:         fmt.Sprintf("app_%s", sha),
 		ManifestName: "pi-test",
 	}
@@ -23,7 +23,7 @@ func Test_ValidateArtifact(t *testing.T) {
 	invalidArtifact := Artifact{}
 
 	err = invalidArtifact.Validate()
-	expectedErr := `4 errors occurred:\n\t* repository field is required\n\t* name field is required\n\t* sha field is required\n\t* manifest_name field is required\n\n`
+	expectedErr := `4 errors occurred:\n\t* repoName field is required\n\t* name field is required\n\t* sha field is required\n\t* manifestName field is required\n\n`
 	assert.Equal(t, err.Error(), expectedErr)
 }
 

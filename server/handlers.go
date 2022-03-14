@@ -25,14 +25,14 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if a.Validate() != nil {
-		errs := fmt.Sprintf("error validating artifact: %s", a.Validate().Error())
+	if err := a.Validate(); err != nil {
+		errs := fmt.Sprintf("error validating artifact: %s", err.Error())
 		logger.Println(errs)
 		handleError(w, errs, http.StatusBadRequest)
 		return
 	}
 
-	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", a.Repository))
+	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", a.RepoName))
 
 	json, err := json.Marshal(a)
 	if err != nil {
@@ -47,7 +47,7 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s", a.Repository, a.ManifestName)
+	key := fmt.Sprintf("%s/%s", a.RepoName, a.ManifestName)
 	err = redisClient.WriteCondition(r.Context(), key, config.StatusInProgress)
 	if err != nil {
 		handleError(w, "Error setting deploy status", http.StatusBadRequest)
@@ -65,21 +65,21 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var a config.Artifact
-	err = json.Unmarshal(data, &a)
+	var p config.DeployStatusPayload
+	err = json.Unmarshal(data, &p)
 	if err != nil {
 		handleError(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
 
-	if a.Validate() != nil {
-		errs := fmt.Sprintf("error validating artifact: %s", a.Validate().Error())
+	if err = p.Validate(); err != nil {
+		errs := fmt.Sprintf("error validating payload: %s", err.Error())
 		logger.Println(errs)
 		handleError(w, errs, http.StatusBadRequest)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s", a.Repository, a.ManifestName)
+	key := fmt.Sprintf("%s/%s", p.RepoName, p.ManifestName)
 	c, err := redisClient.ReadCondition(r.Context(), key)
 
 	if err != nil {

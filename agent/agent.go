@@ -35,7 +35,7 @@ func newAgent(cfg config.Config, client mqtt.MqttClient, ghApiToken, herokuAPIKe
 }
 
 func (a *Agent) handleRepoUpdate(artifact config.Artifact) error {
-	logger.Println(fmt.Sprintf("updating app for repository %s", artifact.Repository))
+	logger.Println(fmt.Sprintf("updating app for repository %s", artifact.RepoName))
 
 	url, err := github.GetDownloadURLWithRetries(artifact, false)
 	if err != nil {

@@ -50,19 +50,24 @@ type Config struct {
 	LogForwarding bool
 }
 
+type DeployStatusPayload struct {
+	RepoName     string `json:"repoName"`
+	ManifestName string `json:"manifestName"`
+}
+
 type Artifact struct {
 	SHA                string `json:"sha"`
-	Repository         string `json:"repository"`
+	RepoName           string `json:"repoName"`
 	Name               string `json:"name"`
-	ArchiveDownloadURL string `json:"download_url"`
-	ManifestName       string `json:"manifest_name"`
+	ArchiveDownloadURL string `json:"downloadURL"`
+	ManifestName       string `json:"manifestName"`
 }
 
 func (a Artifact) Validate() error {
 	var result error
 
-	if a.Repository == "" {
-		result = multierror.Append(result, fmt.Errorf("repository field is required"))
+	if a.RepoName == "" {
+		result = multierror.Append(result, fmt.Errorf("repoName field is required"))
 	}
 
 	if a.Name == "" {
@@ -74,7 +79,21 @@ func (a Artifact) Validate() error {
 	}
 
 	if a.ManifestName == "" {
-		result = multierror.Append(result, fmt.Errorf("manifest_name field is required"))
+		result = multierror.Append(result, fmt.Errorf("manifestName field is required"))
+	}
+
+	return toOnelineErr(result)
+}
+
+func (p DeployStatusPayload) Validate() error {
+	var result error
+
+	if p.RepoName == "" {
+		result = multierror.Append(result, fmt.Errorf("repoName field is required"))
+	}
+
+	if p.ManifestName == "" {
+		result = multierror.Append(result, fmt.Errorf("manifestName field is required"))
 	}
 
 	return toOnelineErr(result)

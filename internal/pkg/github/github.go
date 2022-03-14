@@ -37,7 +37,7 @@ func GetDownloadURLWithRetries(artifact config.Artifact, latest bool) (string, e
 }
 
 func getDownloadURL(artifact config.Artifact, latest bool) (string, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/artifacts", artifact.Repository), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/artifacts", artifact.RepoName), nil)
 	if err != nil {
 		return "", err
 	}

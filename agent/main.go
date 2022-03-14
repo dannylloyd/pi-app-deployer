@@ -95,7 +95,7 @@ func main() {
 
 		logger.Println("Installing application")
 		a := config.Artifact{
-			Repository:   cfg.RepoName,
+			RepoName:     cfg.RepoName,
 			ManifestName: cfg.ManifestName,
 		}
 		err = agent.handleInstall(a)
@@ -123,7 +123,7 @@ func main() {
 			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
 			return
 		}
-		if artifact.Repository == cfg.RepoName && artifact.ManifestName == cfg.ManifestName {
+		if artifact.RepoName == cfg.RepoName && artifact.ManifestName == cfg.ManifestName {
 			logger.Println(fmt.Sprintf("updating repo %s with manifest name %s", cfg.RepoName, cfg.ManifestName))
 			updateCondition.Status = config.StatusInProgress
 			err = agent.publishUpdateCondition(updateCondition)
