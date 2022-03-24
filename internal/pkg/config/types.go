@@ -48,6 +48,7 @@ type Config struct {
 	HomeDir       string
 	AppUser       string
 	LogForwarding bool
+	EnvVars       map[string]string
 }
 
 type DeployStatusPayload struct {

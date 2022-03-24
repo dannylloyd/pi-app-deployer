@@ -5,6 +5,8 @@ heroku:
   env:
     - CLOUDMQTT_URL
     - LOG_LEVEL
+env:
+  - MY_CONFIG
 systemd:
   Unit:
     Description: Sample App

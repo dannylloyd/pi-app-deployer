@@ -1,6 +1,7 @@
 package file
 
 import (
+	"os"
 	"testing"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
@@ -148,4 +149,24 @@ func Test_Helpers(t *testing.T) {
 	expected = "/home/pi/pi-app-deployer-agent --repo-name andrewmarklloyd/pi-test --manifest-name pi-test --log-forwarding"
 	actual = getDeployerExecStart(c)
 	assert.Equal(t, expected, actual)
+}
+
+func Test_WriteServiceEnvFile(t *testing.T) {
+	m, err := manifest.GetManifest("../../../test/templates/fully-defined-manifest.yaml", "sample-app")
+	assert.NoError(t, err)
+
+	envVars := map[string]string{
+		"MY_CONFIG":    "testing",
+		"EXTRA_CONFIG": "foobar",
+	}
+
+	cfg := config.Config{
+		HomeDir: "/tmp",
+		EnvVars: envVars,
+	}
+	err = WriteServiceEnvFile(m, "abcdefg", "hijklmn", cfg)
+	assert.NoError(t, err)
+	b, err := os.ReadFile("/tmp/.sample-app.env")
+	assert.NoError(t, err)
+	assert.Equal(t, "HEROKU_API_KEY=abcdefg\nAPP_VERSION=hijklmn\nEXTRA_CONFIG=foobar\nMY_CONFIG=testing", string(b))
 }

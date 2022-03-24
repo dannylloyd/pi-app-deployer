@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -126,10 +127,18 @@ func evalTemplate(templateFile string, d interface{}) (string, error) {
 	return doc.String(), nil
 }
 
-func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey, version, homeDir string) error {
+func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey, version string, cfg config.Config) error {
 	envTemplate := `HEROKU_API_KEY=%s
 APP_VERSION=%s`
-	err := os.WriteFile(getServiceEnvFileName(m, homeDir), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
+	var keys []string
+	for k := range cfg.EnvVars {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		envTemplate += fmt.Sprintf("\n%s=%s", k, cfg.EnvVars[k])
+	}
+	err := os.WriteFile(getServiceEnvFileName(m, cfg.HomeDir), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
 	if err != nil {
 		return fmt.Errorf("writing service env file: %s", err)
 	}

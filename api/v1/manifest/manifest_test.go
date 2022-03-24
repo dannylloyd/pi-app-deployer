@@ -22,6 +22,7 @@ func Test_FullyDefinedManifest(t *testing.T) {
 	assert.Equal(t, 7, m.Systemd.Service.TimeoutStartSec)
 	assert.Equal(t, "always", m.Systemd.Service.Restart)
 	assert.Equal(t, 23, m.Systemd.Service.RestartSec)
+	assert.Equal(t, []string{"MY_CONFIG"}, m.Env)
 }
 
 func Test_Defaults(t *testing.T) {
@@ -40,6 +41,7 @@ func Test_Defaults(t *testing.T) {
 	assert.Equal(t, 0, m.Systemd.Service.TimeoutStartSec)
 	assert.Equal(t, "on-failure", m.Systemd.Service.Restart)
 	assert.Equal(t, 5, m.Systemd.Service.RestartSec)
+	assert.Equal(t, []string{}, m.Env)
 }
 
 func Test_IncorrectType(t *testing.T) {

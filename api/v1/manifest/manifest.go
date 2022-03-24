@@ -22,6 +22,7 @@ type Manifest struct {
 	Executable string        `yame:"exectutable"`
 	Heroku     Heroku        `yaml:"heroku"`
 	Systemd    SystemdConfig `yaml:"systemd"`
+	Env        []string      `yaml:"env"`
 }
 
 type Heroku struct {
@@ -117,6 +118,10 @@ func (m *Manifest) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	if m.Heroku.App == "" {
 		result = multierror.Append(result, fmt.Errorf("heroku.app field is required"))
+	}
+
+	if m.Env == nil {
+		m.Env = []string{}
 	}
 
 	if result != nil {

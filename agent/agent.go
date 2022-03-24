@@ -79,7 +79,12 @@ func (a *Agent) installOrUpdateApp(artifact config.Artifact) error {
 		return fmt.Errorf("getting manifest from directory %s: %s", a.DownloadDirectory, err)
 	}
 
-	err = file.WriteServiceEnvFile(m, a.HerokuAPIKey, artifact.SHA, a.Config.HomeDir)
+	err = config.ValidateEnvVars(m, a.Config)
+	if err != nil {
+		return fmt.Errorf("validating manifest and config env vars: %s", err)
+	}
+
+	err = file.WriteServiceEnvFile(m, a.HerokuAPIKey, artifact.SHA, a.Config)
 	if err != nil {
 		return fmt.Errorf("writing service file environment file: %s", err)
 	}

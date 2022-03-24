@@ -28,6 +28,10 @@ func main() {
 	homeDir := flag.String("home-dir", "/home/pi", "Name of app user's home directory")
 	install := flag.Bool("install", false, "First time install of the application")
 	logForwarding := flag.Bool("log-forwarding", false, "Send application logs to server")
+
+	var varFlags config.EnvVarFlags
+	flag.Var(&varFlags, "env-var", "List of non-secret environment variable configuration, separated by =, can pass multiple values. Example: --env-var foo=bar --env-var hello=world")
+
 	flag.Parse()
 
 	if *repoName == "" {
@@ -38,12 +42,18 @@ func main() {
 		logger.Fatalln("manifest-name is required")
 	}
 
+	m, err := varFlags.FlagToMap()
+	if err != nil {
+		logger.Fatalln("Error extracting variables from env-vars flags:", err)
+	}
+
 	cfg := config.Config{
 		RepoName:      *repoName,
 		ManifestName:  *manifestName,
 		HomeDir:       *homeDir,
 		AppUser:       *appUser,
 		LogForwarding: *logForwarding,
+		EnvVars:       m,
 	}
 
 	herokuAPIKey := os.Getenv("HEROKU_API_KEY")
