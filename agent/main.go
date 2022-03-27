@@ -14,14 +14,19 @@ import (
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 )
 
+const (
+	appsConfigPath = "/usr/local/src/.pi-app-deployer.app.config"
+)
+
 var logger = log.New(os.Stdout, "[pi-app-deployer-Agent] ", log.LstdFlags)
 
 func main() {
+	// TODO: convert to cobra command, install sub command only needs reponame/manifestname
 	u := os.Getenv("USER")
 	if u != "root" {
 		logger.Fatalln("agent must be run as root, user found was", u)
 	}
-	// todo: support multiple repos and packages
+	// TODO: need to write a config file which supports multiple repo/manifests
 	repoName := flag.String("repo-name", "", "Name of the Github repo including the owner")
 	manifestName := flag.String("manifest-name", "", "Name of the pi-app-deployer manifest")
 	appUser := flag.String("app-user", "pi", "Name of user that will run the app service")
@@ -93,7 +98,17 @@ func main() {
 
 	agent := newAgent(cfg, client, ghApiToken, herokuAPIKey, serverApiKey)
 
+	appConfigs, err := config.GetAppConfigs(appsConfigPath)
+	if err != nil {
+		logger.Fatalln("error getting app configs:", err)
+	}
+
 	if *install {
+		// TODO: support updating a config?
+		if appConfigs.ConfigExists(cfg) {
+			logger.Fatalln("App already exists in app configs file", appsConfigPath)
+		}
+
 		enabled, err := file.SystemdUnitEnabled(cfg.ManifestName)
 		if err != nil {
 			logger.Fatalln("error checking if app is installed already: ", err)
@@ -104,6 +119,9 @@ func main() {
 		}
 
 		logger.Println("Installing application")
+		appConfigs.SetConfig(cfg)
+		appConfigs.WriteAppConfigs(appsConfigPath)
+
 		a := config.Artifact{
 			RepoName:     cfg.RepoName,
 			ManifestName: cfg.ManifestName,
@@ -112,6 +130,7 @@ func main() {
 		if err != nil {
 			logger.Fatalln(fmt.Errorf("failed installation: %s", err))
 		}
+
 		logger.Println("Successfully installed app")
 		os.Exit(0)
 	}

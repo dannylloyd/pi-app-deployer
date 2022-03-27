@@ -43,12 +43,12 @@ type ServiceActionPayload struct {
 }
 
 type Config struct {
-	RepoName      string
-	ManifestName  string
-	HomeDir       string
-	AppUser       string
-	LogForwarding bool
-	EnvVars       map[string]string
+	RepoName      string            `yaml:"repoName"`
+	ManifestName  string            `yaml:"manifestName"`
+	HomeDir       string            `yaml:"homeDir"`
+	AppUser       string            `yaml:"appUser"`
+	LogForwarding bool              `yaml:"logForwarding"`
+	EnvVars       map[string]string `yaml:"envVars"`
 }
 
 type DeployStatusPayload struct {
