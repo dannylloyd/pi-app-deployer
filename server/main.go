@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
@@ -23,11 +24,11 @@ var redisClient redis.Redis
 func main() {
 	srvAddr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
 
-	// TODO: reusing another app's mqtt instance to save cost. Once viable MVP finished I can provision a dedicated instance
 	user := os.Getenv("CLOUDMQTT_USER")
 	pw := os.Getenv("CLOUDMQTT_PASSWORD")
 	url := os.Getenv("CLOUDMQTT_URL")
-	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, pw, url)
+
+	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, pw, strings.Split(url, "@")[1])
 
 	messageClient = mqtt.NewMQTTClient(mqttAddr, *logger)
 	err := messageClient.Connect()
