@@ -9,6 +9,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var AppConfigsFile = fmt.Sprintf("%s/.pi-app-deployer.appconfigs.yaml", PiAppDeployerDir)
+
 type AppConfigs struct {
 	Map map[string]Config `yaml:"map"`
 }

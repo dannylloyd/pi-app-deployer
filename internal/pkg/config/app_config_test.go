@@ -11,7 +11,7 @@ import (
 
 func Test_NoConfig(t *testing.T) {
 	u, _ := uuid.NewUUID()
-	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.config.%s", u.String())
+	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.%s.yaml", u.String())
 	appConfigs, err := GetAppConfigs(testConfigPath)
 	assert.NoError(t, err)
 	assert.NotNil(t, appConfigs)
@@ -23,7 +23,6 @@ func Test_CreateConfig(t *testing.T) {
 	c := Config{
 		RepoName:      "andrewmarklloyd/pi-test",
 		ManifestName:  "pi-test-arm",
-		HomeDir:       "/home/pi",
 		AppUser:       "pi",
 		LogForwarding: false,
 		EnvVars:       map[string]string{"MY_CONFIG": "foobar", "HELLO_CONFIG": "testing"},
@@ -31,7 +30,7 @@ func Test_CreateConfig(t *testing.T) {
 	a := AppConfigs{Map: map[string]Config{"andrewmarklloyd_pi-test_pi-test-arm": c}}
 
 	u, _ := uuid.NewUUID()
-	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.config.%s", u.String())
+	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.%s.yaml", u.String())
 
 	err := a.WriteAppConfigs(testConfigPath)
 	assert.NoError(t, err)
@@ -42,7 +41,6 @@ func Test_CreateConfig(t *testing.T) {
   andrewmarklloyd_pi-test_pi-test-arm:
     repoName: andrewmarklloyd/pi-test
     manifestName: pi-test-arm
-    homeDir: /home/pi
     appUser: pi
     logForwarding: false
     envVars:
@@ -59,7 +57,6 @@ func Test_CreateConfig(t *testing.T) {
 	assert.Equal(t, "pi", actual.AppUser)
 	assert.Equal(t, "andrewmarklloyd/pi-test", actual.RepoName)
 	assert.Equal(t, "pi-test-arm", actual.ManifestName)
-	assert.Equal(t, "/home/pi", actual.HomeDir)
 	assert.False(t, actual.LogForwarding)
 	expectedMap := make(map[string]string)
 	expectedMap["MY_CONFIG"] = "foobar"
@@ -71,7 +68,6 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 	c1 := Config{
 		RepoName:      "andrewmarklloyd/pi-test",
 		ManifestName:  "pi-test-arm",
-		HomeDir:       "/home/pi",
 		AppUser:       "pi",
 		LogForwarding: false,
 		EnvVars:       map[string]string{"MY_CONFIG": "foobar", "HELLO_CONFIG": "testing"},
@@ -80,7 +76,6 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 	c2 := Config{
 		RepoName:      "andrewmarklloyd/pi-test-2",
 		ManifestName:  "pi-test-amd64",
-		HomeDir:       "/home/app-runner",
 		AppUser:       "app-runner",
 		LogForwarding: true,
 		EnvVars:       map[string]string{"HELLO_WORLD": "hello-world", "CONFIG": "config-test"},
@@ -94,7 +89,7 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 	}
 
 	u, _ := uuid.NewUUID()
-	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.config.%s", u.String())
+	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.%s.yaml", u.String())
 	err := appConfigs.WriteAppConfigs(testConfigPath)
 	assert.NoError(t, err)
 
@@ -104,7 +99,6 @@ func Test_CreateMultipleConfigs(t *testing.T) {
   andrewmarklloyd_pi-test-2_pi-test-amd64:
     repoName: andrewmarklloyd/pi-test-2
     manifestName: pi-test-amd64
-    homeDir: /home/app-runner
     appUser: app-runner
     logForwarding: true
     envVars:
@@ -113,7 +107,6 @@ func Test_CreateMultipleConfigs(t *testing.T) {
   andrewmarklloyd_pi-test_pi-test-arm:
     repoName: andrewmarklloyd/pi-test
     manifestName: pi-test-arm
-    homeDir: /home/pi
     appUser: pi
     logForwarding: false
     envVars:
@@ -129,7 +122,6 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 	assert.Equal(t, "pi", c1Actual.AppUser)
 	assert.Equal(t, "andrewmarklloyd/pi-test", c1Actual.RepoName)
 	assert.Equal(t, "pi-test-arm", c1Actual.ManifestName)
-	assert.Equal(t, "/home/pi", c1Actual.HomeDir)
 	assert.False(t, c1Actual.LogForwarding)
 	expectedMap := make(map[string]string)
 	expectedMap["MY_CONFIG"] = "foobar"
@@ -140,7 +132,6 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 	assert.Equal(t, "app-runner", c2Actual.AppUser)
 	assert.Equal(t, "andrewmarklloyd/pi-test-2", c2Actual.RepoName)
 	assert.Equal(t, "pi-test-amd64", c2Actual.ManifestName)
-	assert.Equal(t, "/home/app-runner", c2Actual.HomeDir)
 	assert.True(t, c2Actual.LogForwarding)
 	expectedMap = make(map[string]string)
 	expectedMap["CONFIG"] = "config-test"
@@ -152,7 +143,6 @@ func Test_ConfigExists(t *testing.T) {
 	c1 := Config{
 		RepoName:      "andrewmarklloyd/pi-test",
 		ManifestName:  "pi-test-arm",
-		HomeDir:       "/home/pi",
 		AppUser:       "pi",
 		LogForwarding: false,
 		EnvVars:       map[string]string{"MY_CONFIG": "foobar", "HELLO_CONFIG": "testing"},
@@ -160,7 +150,6 @@ func Test_ConfigExists(t *testing.T) {
 	c2 := Config{
 		RepoName:      "andrewmarklloyd/pi-test-2",
 		ManifestName:  "pi-test-amd64",
-		HomeDir:       "/home/app-runner",
 		AppUser:       "app-runner",
 		LogForwarding: true,
 		EnvVars:       map[string]string{"HELLO_WORLD": "hello-world", "CONFIG": "config-test"},
@@ -168,7 +157,6 @@ func Test_ConfigExists(t *testing.T) {
 	c3 := Config{
 		RepoName:      "andrewmarklloyd/pi-test",
 		ManifestName:  "pi-agent-arm",
-		HomeDir:       "/home/app-runner",
 		AppUser:       "app-runner",
 		LogForwarding: true,
 		EnvVars:       map[string]string{"HELLO_WORLD": "hello-world", "CONFIG": "config-test"},
@@ -191,7 +179,6 @@ func Test_configToKey(t *testing.T) {
 	c1 := Config{
 		RepoName:      "andrewmarklloyd/pi-test",
 		ManifestName:  "pi-test-arm",
-		HomeDir:       "/home/pi",
 		AppUser:       "pi",
 		LogForwarding: false,
 		EnvVars:       map[string]string{"MY_CONFIG": "foobar", "HELLO_CONFIG": "testing"},

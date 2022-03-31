@@ -11,7 +11,6 @@ import (
 
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
-	"github.com/hashicorp/go-multierror"
 )
 
 //go:embed templates/run.tmpl
@@ -24,24 +23,24 @@ var serviceTemplate string
 var deployerTemplate string
 
 type ServiceTemplateData struct {
-	Description     string
-	After           string
-	Requires        string
-	ExecStart       string
-	TimeoutStartSec int
-	Restart         string
-	RestartSec      int
-	EnvironmentFile string
-	HomeDir         string
-	AppUser         string
+	Description      string
+	After            string
+	Requires         string
+	ExecStart        string
+	TimeoutStartSec  int
+	Restart          string
+	RestartSec       int
+	EnvironmentFile  string
+	AppUser          string
+	WorkingDirectory string
 }
 
 type DeployerTemplateData struct {
-	HomeDir         string
-	EnvironmentFile string
-	RepoName        string
-	ManifestName    string
-	ExecStart       string
+	WorkingDirectory string
+	EnvironmentFile  string
+	RepoName         string
+	ManifestName     string
+	ExecStart        string
 }
 
 type RunScriptTemplateData struct {
@@ -53,16 +52,16 @@ type RunScriptTemplateData struct {
 	NewLine       string
 }
 
-func EvalServiceTemplate(m manifest.Manifest, homeDir, user string) (string, error) {
+func EvalServiceTemplate(m manifest.Manifest, user string) (string, error) {
 	d := ServiceTemplateData{
-		Description:     m.Systemd.Unit.Description,
-		ExecStart:       getExecStartName(m, homeDir),
-		TimeoutStartSec: m.Systemd.Service.TimeoutStartSec,
-		Restart:         m.Systemd.Service.Restart,
-		RestartSec:      m.Systemd.Service.RestartSec,
-		EnvironmentFile: getServiceEnvFileName(m, homeDir),
-		HomeDir:         homeDir,
-		AppUser:         user,
+		Description:      m.Systemd.Unit.Description,
+		ExecStart:        getExecStartName(m, config.PiAppDeployerDir),
+		TimeoutStartSec:  m.Systemd.Service.TimeoutStartSec,
+		Restart:          m.Systemd.Service.Restart,
+		RestartSec:       m.Systemd.Service.RestartSec,
+		EnvironmentFile:  getServiceEnvFileName(m, config.PiAppDeployerDir),
+		WorkingDirectory: config.PiAppDeployerDir,
+		AppUser:          user,
 	}
 
 	for _, a := range m.Systemd.Unit.After {
@@ -77,36 +76,22 @@ func EvalServiceTemplate(m manifest.Manifest, homeDir, user string) (string, err
 	return evalTemplate(serviceTemplate, d)
 }
 
-func EvalRunScriptTemplate(m manifest.Manifest, version, homeDir string) (string, error) {
+func EvalRunScriptTemplate(m manifest.Manifest, version string) (string, error) {
 	d := RunScriptTemplateData{}
 	d.EnvVarKeys = m.Heroku.Env
 	d.AppVersion = version
-	d.ExecStart = getExecStartName(m, homeDir)
+	d.ExecStart = getExecStartName(m, config.PiAppDeployerDir)
 	d.HerokuAppName = m.Heroku.App
 	d.NewLine = "\n"
-	d.BinaryPath = getBinaryPath(m, homeDir)
+	d.BinaryPath = getBinaryPath(m, config.PiAppDeployerDir)
 	return evalTemplate(runScriptTemplate, d)
 }
 
 func EvalDeployerTemplate(cfg config.Config) (string, error) {
-	var result error
-
-	if cfg.RepoName == "" {
-		result = multierror.Append(result, fmt.Errorf("config repo name is required"))
-	}
-
-	if cfg.ManifestName == "" {
-		result = multierror.Append(result, fmt.Errorf("config manifest name is required"))
-	}
-
 	d := DeployerTemplateData{
-		EnvironmentFile: getDeployerEnvFileName(cfg.HomeDir),
-		HomeDir:         cfg.HomeDir,
-		ExecStart:       getDeployerExecStart(cfg),
-	}
-
-	if result != nil {
-		return "", result
+		EnvironmentFile:  getDeployerEnvFileName(config.PiAppDeployerDir),
+		WorkingDirectory: config.PiAppDeployerDir,
+		ExecStart:        getDeployerExecStart(cfg),
 	}
 
 	return evalTemplate(deployerTemplate, d)
@@ -127,22 +112,34 @@ func evalTemplate(templateFile string, d interface{}) (string, error) {
 	return doc.String(), nil
 }
 
-func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey, version string, cfg config.Config) error {
+func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey, version string, cfg config.Config, outpath string) error {
+	if outpath == "" {
+		outpath = config.PiAppDeployerDir
+	}
 	envTemplate := `HEROKU_API_KEY=%s
 APP_VERSION=%s`
-	var keys []string
-	for k := range cfg.EnvVars {
-		keys = append(keys, k)
+	sorted := sortMap(cfg.EnvVars)
+	for k, v := range sorted {
+		envTemplate += fmt.Sprintf("\n%s=%s", k, v)
 	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		envTemplate += fmt.Sprintf("\n%s=%s", k, cfg.EnvVars[k])
-	}
-	err := os.WriteFile(getServiceEnvFileName(m, cfg.HomeDir), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
+	err := os.WriteFile(getServiceEnvFileName(m, outpath), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
 	if err != nil {
 		return fmt.Errorf("writing service env file: %s", err)
 	}
 	return nil
+}
+
+func sortMap(envVars map[string]string) map[string]string {
+	var keys []string
+	var newMap = make(map[string]string, len(envVars))
+	for k := range envVars {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		newMap[k] = envVars[k]
+	}
+	return newMap
 }
 
 func getExecStartName(m manifest.Manifest, homeDir string) string {
@@ -150,10 +147,7 @@ func getExecStartName(m manifest.Manifest, homeDir string) string {
 }
 
 func getDeployerExecStart(cfg config.Config) string {
-	execStart := fmt.Sprintf("%s/pi-app-deployer-agent --repo-name %s --manifest-name %s", cfg.HomeDir, cfg.RepoName, cfg.ManifestName)
-	if cfg.LogForwarding {
-		execStart = fmt.Sprintf("%s --log-forwarding", execStart)
-	}
+	execStart := fmt.Sprintf("%s/pi-app-deployer-agent update", config.PiAppDeployerDir)
 	return execStart
 }
 

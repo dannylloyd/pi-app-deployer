@@ -1,0 +1,8 @@
+map:
+  andrewmarklloyd_pi-test_pi-test-amd64:
+    repoName: andrewmarklloyd/pi-test
+    manifestName: pi-test-amd64
+    appUser: runneradmin
+    logForwarding: true
+    envVars:
+      MY_CONFIG: testing

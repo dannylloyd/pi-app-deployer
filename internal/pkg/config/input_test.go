@@ -6,22 +6,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_InputValid(t *testing.T) {
-	varFlags := EnvVarFlags{"MY_CONFIG=test", "A_CONFIG=foobar"}
-	m, err := varFlags.FlagToMap()
+func Test_Input(t *testing.T) {
+	varFlags := EnvVarFlags{}
+	err := varFlags.Set("hello=world")
 	assert.NoError(t, err)
-	assert.Equal(t, m["MY_CONFIG"], "test")
-	assert.Equal(t, m["A_CONFIG"], "foobar")
-}
 
-func Test_InputInvalid(t *testing.T) {
-	varFlags := EnvVarFlags{"MY_CONFIG test", "A_CONFIG=foobar"}
-	_, err := varFlags.FlagToMap()
-	expectedErr := "flag was not properly passed, tried to split flag on '=' but got: '[MY_CONFIG test]'. Original flag used was 'MY_CONFIG test'"
-	assert.EqualError(t, err, expectedErr)
+	err = varFlags.Set("helloworld")
+	assert.EqualError(t, err, "flag was not properly passed, tried to split flag on '=' but got: '[helloworld]'. Original flag used was 'helloworld'")
 
-	varFlags = EnvVarFlags{"MY_CONFIG=test", "A_CONFIG foobar"}
-	_, err = varFlags.FlagToMap()
-	expectedErr = "flag was not properly passed, tried to split flag on '=' but got: '[A_CONFIG foobar]'. Original flag used was 'A_CONFIG foobar'"
-	assert.EqualError(t, err, expectedErr)
+	err = varFlags.Set("MY_CONFIG=test")
+	assert.NoError(t, err)
+	assert.Equal(t, varFlags.Map["MY_CONFIG"], "test")
+
+	err = varFlags.Set("A_CONFIG=foobar")
+	assert.NoError(t, err)
+	assert.Equal(t, varFlags.Map["A_CONFIG"], "foobar")
 }
