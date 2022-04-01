@@ -56,4 +56,4 @@ while [[ ${found} == "false" ]]; do
   sleep 10
 done
 
-echo "Successfully ran integration tests! No update this to use Go testing :)"
+echo "Successfully ran integration tests! Now update this to use Go testing :)"
