@@ -24,6 +24,7 @@ mv ${workDir}/pi-app-deployer-agent /usr/local/src/
 /usr/local/src/pi-app-deployer-agent install --appUser runneradmin --repoName ${repo} --manifestName ${manifestName} --envVar MY_CONFIG=testing --logForwarding --herokuApp pi-app-deployer-staging
 
 grep "MY_CONFIG\=testing" /usr/local/src/.pi-test-amd64.env >/dev/null
+cat /usr/local/src/.pi-app-deployer.config.yaml
 diff test/test-int-appconfigs.yaml /usr/local/src/.pi-app-deployer.config.yaml
 
 sleep 10

@@ -6,5 +6,5 @@ appConfigs:
     logForwarding: true
     envVars:
       MY_CONFIG: testing
-path: /usr/local/src/.pi-app-deployer.config.yaml
 herokuApp: pi-app-deployer-staging
+path: /usr/local/src/.pi-app-deployer.config.yaml
