@@ -12,11 +12,12 @@ import (
 func Test_NoConfig(t *testing.T) {
 	u, _ := uuid.NewUUID()
 	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.%s.yaml", u.String())
-	appConfigs, err := GetAppConfigs(testConfigPath)
+	herokuApp := "testing"
+	deployerConfig, err := NewDeployerConfig(testConfigPath, herokuApp)
 	assert.NoError(t, err)
-	assert.NotNil(t, appConfigs)
-	assert.NotNil(t, appConfigs.Map)
-	assert.Equal(t, map[string]Config{}, appConfigs.Map)
+	assert.NotNil(t, deployerConfig)
+	assert.NotNil(t, deployerConfig.AppConfigs)
+	assert.Equal(t, map[string]Config{}, deployerConfig.AppConfigs)
 }
 
 func Test_CreateConfig(t *testing.T) {
@@ -27,17 +28,20 @@ func Test_CreateConfig(t *testing.T) {
 		LogForwarding: false,
 		EnvVars:       map[string]string{"MY_CONFIG": "foobar", "HELLO_CONFIG": "testing"},
 	}
-	a := AppConfigs{Map: map[string]Config{"andrewmarklloyd_pi-test_pi-test-arm": c}}
 
 	u, _ := uuid.NewUUID()
 	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.%s.yaml", u.String())
 
-	err := a.WriteAppConfigs(testConfigPath)
+	deployerConfig, err := NewDeployerConfig(testConfigPath, "test-app")
+	deployerConfig.SetAppConfig(c)
+
+	err = deployerConfig.WriteDeployerConfig()
 	assert.NoError(t, err)
 
 	content, err := os.ReadFile(testConfigPath)
 	assert.NoError(t, err)
-	expectedContent := `map:
+	expectedTemp := `herokuApp: test-app
+appConfigs:
   andrewmarklloyd_pi-test_pi-test-arm:
     repoName: andrewmarklloyd/pi-test
     manifestName: pi-test-arm
@@ -46,13 +50,11 @@ func Test_CreateConfig(t *testing.T) {
     envVars:
       HELLO_CONFIG: testing
       MY_CONFIG: foobar
+path: /tmp/.pi-app-deployer.app.%s.yaml
 `
-	assert.Equal(t, expectedContent, string(content))
+	assert.Equal(t, fmt.Sprintf(expectedTemp, u.String()), string(content))
 
-	aConf, err := GetAppConfigs(testConfigPath)
-	assert.NoError(t, err)
-
-	actual := aConf.Map["andrewmarklloyd_pi-test_pi-test-arm"]
+	actual := deployerConfig.AppConfigs["andrewmarklloyd_pi-test_pi-test-arm"]
 
 	assert.Equal(t, "pi", actual.AppUser)
 	assert.Equal(t, "andrewmarklloyd/pi-test", actual.RepoName)
@@ -81,21 +83,19 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 		EnvVars:       map[string]string{"HELLO_WORLD": "hello-world", "CONFIG": "config-test"},
 	}
 
-	appConfigs := AppConfigs{
-		map[string]Config{
-			configToKey(c1): c1,
-			configToKey(c2): c2,
-		},
-	}
-
 	u, _ := uuid.NewUUID()
 	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.%s.yaml", u.String())
-	err := appConfigs.WriteAppConfigs(testConfigPath)
+	deployerConfig, err := NewDeployerConfig(testConfigPath, "testing")
+	deployerConfig.SetAppConfig(c1)
+	deployerConfig.SetAppConfig(c2)
+
+	err = deployerConfig.WriteDeployerConfig()
 	assert.NoError(t, err)
 
 	content, err := os.ReadFile(testConfigPath)
 	assert.NoError(t, err)
-	expectedContent := `map:
+	expectedContent := `herokuApp: testing
+appConfigs:
   andrewmarklloyd_pi-test-2_pi-test-amd64:
     repoName: andrewmarklloyd/pi-test-2
     manifestName: pi-test-amd64
@@ -112,13 +112,14 @@ func Test_CreateMultipleConfigs(t *testing.T) {
     envVars:
       HELLO_CONFIG: testing
       MY_CONFIG: foobar
+path: /tmp/.pi-app-deployer.app.%s.yaml
 `
-	assert.Equal(t, expectedContent, string(content))
+	assert.Equal(t, fmt.Sprintf(expectedContent, u.String()), string(content))
 
-	appConfigs, err = GetAppConfigs(testConfigPath)
+	deployerConfig, err = NewDeployerConfig(testConfigPath, "testing")
 	assert.NoError(t, err)
 
-	c1Actual := appConfigs.Map["andrewmarklloyd_pi-test_pi-test-arm"]
+	c1Actual := deployerConfig.AppConfigs["andrewmarklloyd_pi-test_pi-test-arm"]
 	assert.Equal(t, "pi", c1Actual.AppUser)
 	assert.Equal(t, "andrewmarklloyd/pi-test", c1Actual.RepoName)
 	assert.Equal(t, "pi-test-arm", c1Actual.ManifestName)
@@ -128,7 +129,7 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 	expectedMap["HELLO_CONFIG"] = "testing"
 	assert.Equal(t, expectedMap, c1Actual.EnvVars)
 
-	c2Actual := appConfigs.Map["andrewmarklloyd_pi-test-2_pi-test-amd64"]
+	c2Actual := deployerConfig.AppConfigs["andrewmarklloyd_pi-test-2_pi-test-amd64"]
 	assert.Equal(t, "app-runner", c2Actual.AppUser)
 	assert.Equal(t, "andrewmarklloyd/pi-test-2", c2Actual.RepoName)
 	assert.Equal(t, "pi-test-amd64", c2Actual.ManifestName)
@@ -162,17 +163,22 @@ func Test_ConfigExists(t *testing.T) {
 		EnvVars:       map[string]string{"HELLO_WORLD": "hello-world", "CONFIG": "config-test"},
 	}
 
-	appConfigs := AppConfigs{
-		map[string]Config{
+	deployerConfig := DeployerConfig{
+		AppConfigs: map[string]Config{
 			configToKey(c1): c1,
 			configToKey(c2): c2,
 		},
+		HerokuApp: "pi-app-deployer",
+		Path:      "testing-path",
 	}
-	exists := appConfigs.ConfigExists(c1)
+
+	exists := deployerConfig.ConfigExists(c1)
 	assert.True(t, exists, "Config should exist in the app configs struct")
 
-	exists = appConfigs.ConfigExists(c3)
+	exists = deployerConfig.ConfigExists(c3)
 	assert.False(t, exists, "Config should NOT exist in the app configs struct")
+
+	assert.Equal(t, "pi-app-deployer", deployerConfig.HerokuApp)
 }
 
 func Test_configToKey(t *testing.T) {

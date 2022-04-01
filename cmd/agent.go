@@ -22,9 +22,9 @@ type Agent struct {
 	ServerApiKey string
 }
 
-func newAgent(herokuAPIKey string) (Agent, error) {
+func newAgent(herokuAPIKey, herokuApp string) (Agent, error) {
 	c := heroku.NewHerokuClient(herokuAPIKey)
-	envVars, err := c.GetEnvVars()
+	envVars, err := c.GetEnvVars(herokuApp)
 	if err != nil {
 		return Agent{}, fmt.Errorf("Error getting env vars from Heroku: %s", err)
 	}
@@ -207,8 +207,8 @@ func (a *Agent) installOrUpdateApp(artifact config.Artifact, cfg config.Config) 
 }
 
 // TODO: is there a better way to capture closures without so much nesting?
-func (a *Agent) startLogForwarder(appConfigs config.AppConfigs, f func(config.Log)) {
-	for _, cfg := range appConfigs.Map {
+func (a *Agent) startLogForwarder(deplerConfig config.DeployerConfig, f func(config.Log)) {
+	for _, cfg := range deplerConfig.AppConfigs {
 		if cfg.LogForwarding {
 			go func(n config.Config) {
 				ch := make(chan string)

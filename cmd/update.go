@@ -33,12 +33,22 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
 	}
 
-	agent, err := newAgent(herokuAPIKey)
+	herokuApp, err := cmd.Flags().GetString("herokuApp")
+	if err != nil {
+		fmt.Println("error getting herokuApp flag", err)
+		os.Exit(1)
+	}
+	if herokuApp == "" {
+		fmt.Println("herokuApp flag is required")
+		os.Exit(1)
+	}
+
+	agent, err := newAgent(herokuAPIKey, herokuApp)
 	if err != nil {
 		logger.Fatalln(fmt.Errorf("error creating agent: %s", err))
 	}
 
-	appConfigs, err := config.GetAppConfigs(config.AppConfigsFile)
+	deployerConfig, err := config.NewDeployerConfig(config.DeployerConfigFile, herokuApp)
 	if err != nil {
 		logger.Fatalln("error getting app configs:", err)
 	}
@@ -48,7 +58,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		logger.Fatalln("connecting to mqtt: ", err)
 	}
 
-	agent.startLogForwarder(appConfigs, func(l config.Log) {
+	agent.startLogForwarder(deployerConfig, func(l config.Log) {
 		json, err := json.Marshal(l)
 		if err != nil {
 			logger.Println(fmt.Sprintf("marshalling log forwarder message: %s", err))
@@ -68,7 +78,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		for _, cfg := range appConfigs.Map {
+		for _, cfg := range deployerConfig.AppConfigs {
 			if artifact.RepoName == cfg.RepoName && artifact.ManifestName == cfg.ManifestName {
 				logger.Println(fmt.Sprintf("updating repo %s with manifest name %s", cfg.RepoName, cfg.ManifestName))
 				updateCondition := config.UpdateCondition{
@@ -109,7 +119,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.ServiceActionTopic, err))
 			return
 		}
-		for _, cfg := range appConfigs.Map {
+		for _, cfg := range deployerConfig.AppConfigs {
 			if payload.RepoName == cfg.RepoName && payload.ManifestName == cfg.ManifestName {
 				logger.Println(fmt.Sprintf("Running service action %s on %s/%s", payload.Action, payload.RepoName, payload.ManifestName))
 				var err error

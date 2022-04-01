@@ -43,24 +43,34 @@ func runInstall(cmd *cobra.Command, args []string) {
 		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
 	}
 
-	agent, err := newAgent(herokuAPIKey)
+	herokuApp, err := cmd.Flags().GetString("herokuApp")
+	if err != nil {
+		fmt.Println("error getting herokuApp flag", err)
+		os.Exit(1)
+	}
+	if herokuApp == "" {
+		fmt.Println("herokuApp flag is required")
+		os.Exit(1)
+	}
+
+	agent, err := newAgent(herokuAPIKey, herokuApp)
 	if err != nil {
 		logger.Fatalln(fmt.Errorf("error creating agent: %s", err))
 	}
 
-	appConfigs, err := config.GetAppConfigs(config.AppConfigsFile)
+	deployerConfig, err := config.NewDeployerConfig(config.DeployerConfigFile, herokuApp)
 	if err != nil {
-		logger.Fatalln("error getting app configs:", err)
+		logger.Fatalln("error getting deployer config:", err)
 	}
 
 	// TODO: support updating a config?
-	if appConfigs.ConfigExists(cfg) {
-		logger.Fatalln("App already exists in app configs file", config.AppConfigsFile)
+	if deployerConfig.ConfigExists(cfg) {
+		logger.Fatalln("App already exists in app configs file", config.DeployerConfigFile)
 	}
 
 	logger.Println("Installing application")
-	appConfigs.SetConfig(cfg)
-	appConfigs.WriteAppConfigs(config.AppConfigsFile)
+	deployerConfig.SetAppConfig(cfg)
+	deployerConfig.WriteDeployerConfig()
 
 	a := config.Artifact{
 		RepoName:     cfg.RepoName,

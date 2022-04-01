@@ -28,4 +28,6 @@ func init() {
 	if u.Username != "root" {
 		logger.Fatalln("agent must be run as root, user found was", u.Username)
 	}
+
+	rootCmd.PersistentFlags().String("herokuApp", "", "Name of the Heroku app")
 }

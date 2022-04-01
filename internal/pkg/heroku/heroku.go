@@ -17,8 +17,8 @@ func NewHerokuClient(apiKey string) HerokuClient {
 	}
 }
 
-func (c *HerokuClient) GetEnvVars() (map[string]string, error) {
-	req, err := http.NewRequest(http.MethodGet, "https://api.heroku.com/apps/pi-app-deployer/config-vars", nil)
+func (c *HerokuClient) GetEnvVars(herokuApp string) (map[string]string, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.heroku.com/apps/%s/config-vars", herokuApp), nil)
 	if err != nil {
 		return nil, err
 	}
