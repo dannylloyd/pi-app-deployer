@@ -1,4 +1,4 @@
-map:
+appConfigs:
   andrewmarklloyd_pi-test_pi-test-amd64:
     repoName: andrewmarklloyd/pi-test
     manifestName: pi-test-amd64
@@ -6,3 +6,5 @@ map:
     logForwarding: true
     envVars:
       MY_CONFIG: testing
+path: /usr/local/src/.pi-app-deployer.config.yaml
+herokuApp: pi-app-deployer-staging
