@@ -42,18 +42,7 @@ User=pi
 }
 
 func Test_EvalDeployerTemplate(t *testing.T) {
-	envVars := map[string]string{
-		"MY_CONFIG":    "testing",
-		"EXTRA_CONFIG": "foobar",
-	}
-
-	c := config.Config{
-		RepoName:     "andrewmarklloyd/pi-test",
-		ManifestName: "pi-test",
-		AppUser:      "pi",
-		EnvVars:      envVars,
-	}
-	serviceFile, err := EvalDeployerTemplate(c)
+	serviceFile, err := EvalDeployerTemplate("heroku-app")
 	assert.NoError(t, err)
 
 	expectedServiceFile := `[Unit]
@@ -67,7 +56,7 @@ WantedBy=multi-user.target
 
 [Service]
 EnvironmentFile=/usr/local/src/.pi-app-deployer-agent.env
-ExecStart=/usr/local/src/pi-app-deployer-agent update
+ExecStart=/usr/local/src/pi-app-deployer-agent update --herokuApp heroku-app
 WorkingDirectory=/usr/local/src
 StandardOutput=inherit
 StandardError=inherit
@@ -122,23 +111,12 @@ unset HEROKU_API_KEY
 }
 
 func Test_Helpers(t *testing.T) {
-	c := config.Config{
-		RepoName:     "andrewmarklloyd/pi-test",
-		ManifestName: "pi-test",
-		AppUser:      "runner",
-	}
-	expected := "/usr/local/src/pi-app-deployer-agent update"
-	actual := getDeployerExecStart(c)
+	expected := "/usr/local/src/pi-app-deployer-agent update --herokuApp testing-app"
+	actual := getDeployerExecStart("testing-app")
 	assert.Equal(t, expected, actual)
 
-	c = config.Config{
-		RepoName:      "andrewmarklloyd/pi-test",
-		ManifestName:  "pi-test",
-		AppUser:       "runner",
-		LogForwarding: true,
-	}
-	expected = "/usr/local/src/pi-app-deployer-agent update"
-	actual = getDeployerExecStart(c)
+	expected = "/usr/local/src/pi-app-deployer-agent update --herokuApp testing-app"
+	actual = getDeployerExecStart("testing-app")
 	assert.Equal(t, expected, actual)
 }
 

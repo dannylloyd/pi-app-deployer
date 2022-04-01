@@ -87,11 +87,11 @@ func EvalRunScriptTemplate(m manifest.Manifest, version string) (string, error) 
 	return evalTemplate(runScriptTemplate, d)
 }
 
-func EvalDeployerTemplate(cfg config.Config) (string, error) {
+func EvalDeployerTemplate(herokuApp string) (string, error) {
 	d := DeployerTemplateData{
 		EnvironmentFile:  getDeployerEnvFileName(config.PiAppDeployerDir),
 		WorkingDirectory: config.PiAppDeployerDir,
-		ExecStart:        getDeployerExecStart(cfg),
+		ExecStart:        getDeployerExecStart(herokuApp),
 	}
 
 	return evalTemplate(deployerTemplate, d)
@@ -146,8 +146,8 @@ func getExecStartName(m manifest.Manifest, homeDir string) string {
 	return fmt.Sprintf("%s/run-%s.sh", homeDir, m.Name)
 }
 
-func getDeployerExecStart(cfg config.Config) string {
-	execStart := fmt.Sprintf("%s/pi-app-deployer-agent update", config.PiAppDeployerDir)
+func getDeployerExecStart(herokuApp string) string {
+	execStart := fmt.Sprintf("%s/pi-app-deployer-agent update --herokuApp %s", config.PiAppDeployerDir, herokuApp)
 	return execStart
 }
 

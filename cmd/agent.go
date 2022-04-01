@@ -20,6 +20,7 @@ type Agent struct {
 	GHApiToken   string
 	HerokuAPIKey string
 	ServerApiKey string
+	HerokuApp    string
 }
 
 func newAgent(herokuAPIKey, herokuApp string) (Agent, error) {
@@ -61,6 +62,7 @@ func newAgent(herokuAPIKey, herokuApp string) (Agent, error) {
 		GHApiToken:   ghApiToken,
 		HerokuAPIKey: herokuAPIKey,
 		ServerApiKey: serverApiKey,
+		HerokuApp:    herokuApp,
 	}, nil
 }
 
@@ -129,7 +131,7 @@ func (a *Agent) installOrUpdateApp(artifact config.Artifact, cfg config.Config) 
 		return fmt.Errorf("rendering runscript template: %s", err)
 	}
 
-	deployerFile, err := file.EvalDeployerTemplate(cfg)
+	deployerFile, err := file.EvalDeployerTemplate(a.HerokuApp)
 	if err != nil {
 		return fmt.Errorf("rendering deployer template: %s", err)
 	}
