@@ -136,5 +136,6 @@ func Test_WriteServiceEnvFile(t *testing.T) {
 	assert.NoError(t, err)
 	b, err := os.ReadFile("/tmp/.sample-app.env")
 	assert.NoError(t, err)
+	// TODO: sorting isn't quite right, this test fails _sometimes_
 	assert.Equal(t, "HEROKU_API_KEY=abcdefg\nAPP_VERSION=hijklmn\nEXTRA_CONFIG=foobar\nMY_CONFIG=testing", string(b))
 }
