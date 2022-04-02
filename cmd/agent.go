@@ -54,8 +54,8 @@ func newAgent(herokuAPIKey, herokuApp string) (Agent, error) {
 	if mqttURL == "" {
 		return Agent{}, fmt.Errorf("CLOUDMQTT_URL environment variable not found from heroku")
 	}
-	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, password, strings.Split(mqttURL, "@")[1])
-	client := mqtt.NewMQTTClient(mqttAddr, *logger)
+
+	client := mqtt.NewMQTTClient(mqttURL, *logger)
 
 	return Agent{
 		MqttClient:   client,
