@@ -38,11 +38,11 @@ git config --global user.email "<>"
 git clone https://github.com/andrewmarklloyd/pi-test.git
 cd pi-test
 git remote set-url origin https://andrewmarklloyd:${GH_COMMIT_TOKEN}@github.com/andrewmarklloyd/pi-test.git
-uuid=$(uuidgen)
-echo "Test run: ${uuid}"
-echo ${uuid} >> test/integration-trigger.txt
+deployerSHA=$(git rev-parse HEAD)
+echo "Test run: ${deployerSHA}"
+echo ${deployerSHA} >> test/integration-trigger.txt
 git add .
-git commit -m "Pi App Deployer Test Run ${uuid}"
+git commit -m "Pi App Deployer Test Run ${deployerSHA}"
 sha=$(git rev-parse HEAD)
 git push origin main
 
