@@ -118,9 +118,9 @@ func WriteServiceEnvFile(m manifest.Manifest, herokuAPIKey, version string, cfg 
 	}
 	envTemplate := `HEROKU_API_KEY=%s
 APP_VERSION=%s`
-	sorted := sortMap(cfg.EnvVars)
-	for k, v := range sorted {
-		envTemplate += fmt.Sprintf("\n%s=%s", k, v)
+	keys := mapToSortedKeys(cfg.EnvVars)
+	for _, k := range keys {
+		envTemplate += fmt.Sprintf("\n%s=%s", k, cfg.EnvVars[k])
 	}
 	err := os.WriteFile(getServiceEnvFileName(m, outpath), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
 	if err != nil {
@@ -129,21 +129,17 @@ APP_VERSION=%s`
 	return nil
 }
 
-func sortMap(envVars map[string]string) map[string]string {
+func mapToSortedKeys(envVars map[string]string) []string {
 	var keys []string
-	var newMap = make(map[string]string, len(envVars))
 	for k := range envVars {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	for _, k := range keys {
-		newMap[k] = envVars[k]
-	}
-	return newMap
+	return keys
 }
 
-func getExecStartName(m manifest.Manifest, homeDir string) string {
-	return fmt.Sprintf("%s/run-%s.sh", homeDir, m.Name)
+func getExecStartName(m manifest.Manifest, dir string) string {
+	return fmt.Sprintf("%s/run-%s.sh", dir, m.Name)
 }
 
 func getDeployerExecStart(herokuApp string) string {
@@ -151,16 +147,16 @@ func getDeployerExecStart(herokuApp string) string {
 	return execStart
 }
 
-func getBinaryPath(m manifest.Manifest, homeDir string) string {
-	return fmt.Sprintf("%s/%s", homeDir, m.Executable)
+func getBinaryPath(m manifest.Manifest, dir string) string {
+	return fmt.Sprintf("%s/%s", dir, m.Executable)
 }
 
-func getServiceEnvFileName(m manifest.Manifest, homeDir string) string {
-	return fmt.Sprintf("%s/.%s.env", homeDir, m.Name)
+func getServiceEnvFileName(m manifest.Manifest, dir string) string {
+	return fmt.Sprintf("%s/.%s.env", dir, m.Name)
 }
 
-func getDeployerEnvFileName(homeDir string) string {
-	return fmt.Sprintf("%s/.pi-app-deployer-agent.env", homeDir)
+func getDeployerEnvFileName(dir string) string {
+	return fmt.Sprintf("%s/.pi-app-deployer-agent.env", dir)
 }
 
 func FromJSONCompliant(fileWithNewlines string) string {
