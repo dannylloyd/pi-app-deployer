@@ -21,7 +21,13 @@ rm -f ${envFile}
 cat <<< "HEROKU_API_KEY=${HEROKU_API_KEY}" > ${envFile}
 
 mv ${workDir}/pi-app-deployer-agent /usr/local/src/
-/usr/local/src/pi-app-deployer-agent install --appUser runneradmin --repoName ${repo} --manifestName ${manifestName} --envVar MY_CONFIG=testing --logForwarding --herokuApp pi-app-deployer-staging
+/usr/local/src/pi-app-deployer-agent install \
+    --appUser runneradmin \
+    --repoName andrewmarklloyd/pi-test \
+    --manifestName pi-test-amd64 \
+    --envVar MY_CONFIG=testing \
+    --logForwarding \
+    --herokuApp pi-app-deployer-staging
 
 grep "MY_CONFIG\=testing" /usr/local/src/.pi-test-amd64.env >/dev/null
 diff test/test-int-appconfigs.yaml /usr/local/src/.pi-app-deployer.config.yaml
