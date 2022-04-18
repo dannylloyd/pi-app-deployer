@@ -1,11 +1,10 @@
-name: Validation
-
+name: PR Check
 on:
-  push:
+  pull_request:
     branches: [ main ]
-
+  workflow_dispatch:
 jobs:
-  build:
+  pull_request:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -17,12 +16,12 @@ jobs:
       run: make build
     - name: Test
       run: make test
-    - name: Deploy Heroku Production
+    - name: Deploy Heroku Staging
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         GITHUB_SHA:  ${{ github.sha }}
-        SERVER_API_KEY: ${{ secrets.SERVER_API_KEY_PROD }}
-      run: ./.github/scripts/deploy-heroku.sh pi-app-deployer
+        SERVER_API_KEY: ${{ secrets.SERVER_API_KEY_STAGING }}
+      run: ./.github/scripts/deploy-heroku.sh pi-app-deployer-staging
     - name: Integration
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}

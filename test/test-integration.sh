@@ -53,12 +53,18 @@ sha=$(git rev-parse HEAD)
 git push origin main
 
 echo "Waiting for successful update of service"
+i=0
 found="false"
 while [[ ${found} == "false" ]]; do
+  if [[ ${i} -gt 10 ]]; then
+    echo "Exceeded max attempts, test failed"
+    exit 1
+  fi
   out=$(journalctl -u pi-test-amd64.service -n 100)
   if [[ ${out} == *"${sha}"* ]]; then
     found="true"
   fi
+  i=$((i+1))
   sleep 10
 done
 

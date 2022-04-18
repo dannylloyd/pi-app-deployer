@@ -21,12 +21,18 @@ var forwarderLogger = log.New(os.Stdout, "[pi-app-deployer-Forwarder] ", log.Lst
 var messageClient mqtt.MqttClient
 var redisClient redis.Redis
 
+var version string
+
 func main() {
 	srvAddr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
 
 	user := os.Getenv("CLOUDMQTT_USER")
 	pw := os.Getenv("CLOUDMQTT_PASSWORD")
 	url := os.Getenv("CLOUDMQTT_URL")
+
+	if user == "" || pw == "" || url == "" {
+		logger.Fatalln("CLOUDMQTT_USER CLOUDMQTT_PASSWORD CLOUDMQTT_URL env vars must be set")
+	}
 
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, pw, strings.Split(url, "@")[1])
 
@@ -73,6 +79,7 @@ func main() {
 	router.Handle("/push", requireLogin(http.HandlerFunc(handleRepoPush))).Methods("POST")
 	router.Handle("/deploy/status", requireLogin(http.HandlerFunc(handleDeployStatus))).Methods("GET")
 	router.Handle("/service", requireLogin(http.HandlerFunc(handleServicePost))).Methods("POST")
+	router.Handle("/health", requireLogin(http.HandlerFunc(handleHealthCheck))).Methods("GET")
 
 	srv := &http.Server{
 		Handler: router,

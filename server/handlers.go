@@ -140,3 +140,7 @@ func handleServicePost(w http.ResponseWriter, r *http.Request) {
 func handleError(w http.ResponseWriter, err string, statusCode int) {
 	http.Error(w, fmt.Sprintf(`{"status":"error","error":"%s"}`, err), statusCode)
 }
+
+func handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, fmt.Sprintf(`{"version":"%s"}`, version))
+}
