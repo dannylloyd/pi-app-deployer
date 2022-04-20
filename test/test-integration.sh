@@ -30,7 +30,6 @@ mv ${workDir}/pi-app-deployer-agent /usr/local/src/
     --herokuApp ${DEPLOYER_APP}
 
 sed "s/{{.HerokuApp}}/${DEPLOYER_APP}/g" test/test-int-appconfigs.yaml > /tmp/test.yaml
-echo hello > /tmp/test.yaml
 grep "MY_CONFIG\=testing" /usr/local/src/.pi-test-amd64.env >/dev/null
 diff /tmp/test.yaml /usr/local/src/.pi-app-deployer.config.yaml
 
