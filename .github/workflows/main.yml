@@ -30,4 +30,4 @@ jobs:
       run: |
         loginctl enable-linger runner
         sleep 2
-        make DEPLOYER_HOST=pi-app-deployer test-integration
+        make DEPLOYER_APP=pi-app-deployer test-integration

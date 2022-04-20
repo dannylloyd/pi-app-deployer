@@ -27,7 +27,7 @@ mv ${workDir}/pi-app-deployer-agent /usr/local/src/
     --manifestName pi-test-amd64 \
     --envVar MY_CONFIG=testing \
     --logForwarding \
-    --herokuApp pi-app-deployer-staging
+    --herokuApp ${DEPLOYER_APP}
 
 grep "MY_CONFIG\=testing" /usr/local/src/.pi-test-amd64.env >/dev/null
 diff test/test-int-appconfigs.yaml /usr/local/src/.pi-app-deployer.config.yaml
@@ -45,8 +45,8 @@ git clone https://github.com/andrewmarklloyd/pi-test.git
 cd pi-test
 git remote set-url origin https://andrewmarklloyd:${GH_COMMIT_TOKEN}@github.com/andrewmarklloyd/pi-test.git
 deployerSHA=$(git rev-parse HEAD)
-echo "Test run: ${deployerSHA};${DEPLOYER_HOST}"
-echo "${deployerSHA};${DEPLOYER_HOST}" >> test/integration-trigger.txt
+echo "Test run: ${deployerSHA};${DEPLOYER_APP}"
+echo "${deployerSHA};${DEPLOYER_APP}" >> test/integration-trigger.txt
 git add .
 git commit -m "Pi App Deployer Test Run ${deployerSHA}"
 sha=$(git rev-parse HEAD)
