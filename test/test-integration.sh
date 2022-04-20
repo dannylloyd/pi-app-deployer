@@ -29,8 +29,9 @@ mv ${workDir}/pi-app-deployer-agent /usr/local/src/
     --logForwarding \
     --herokuApp ${DEPLOYER_APP}
 
+sed "s/{{.HerokuApp}}/${DEPLOYER_APP}/g" test/test-int-appconfigs.yaml > /tmp/test.yaml
 grep "MY_CONFIG\=testing" /usr/local/src/.pi-test-amd64.env >/dev/null
-diff test/test-int-appconfigs.yaml /usr/local/src/.pi-app-deployer.config.yaml
+diff /tmp/test.yaml /usr/local/src/.pi-app-deployer.config.yaml
 
 sleep 10
 journalctl -u pi-app-deployer-agent.service

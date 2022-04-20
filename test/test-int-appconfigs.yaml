@@ -1,4 +1,4 @@
-herokuApp: pi-app-deployer-staging
+herokuApp: {{.HerokuApp}}
 appConfigs:
   andrewmarklloyd_pi-test_pi-test-amd64:
     repoName: andrewmarklloyd/pi-test
