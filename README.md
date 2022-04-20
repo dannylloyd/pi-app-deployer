@@ -16,6 +16,3 @@ Requires several environment variables:
 ```
 bash <(curl -s -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/andrewmarklloyd/pi-app-deployer/master/install/install-agent.sh?$(date +%s)=$(date +%s)")
 ```
-
-TODO
-- add log forwarder functionality
