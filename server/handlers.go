@@ -101,7 +101,7 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, fmt.Sprintf(`{"status":"success","condition":%s}`, c))
+	fmt.Fprintf(w, c)
 }
 
 func handleServicePost(w http.ResponseWriter, r *http.Request) {
