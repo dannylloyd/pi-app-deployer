@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/file"
 	"github.com/spf13/cobra"
@@ -81,7 +82,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		for _, cfg := range deployerConfig.AppConfigs {
 			if artifact.RepoName == cfg.RepoName && artifact.ManifestName == cfg.ManifestName {
 				logger.Println(fmt.Sprintf("updating repo %s with manifest name %s", cfg.RepoName, cfg.ManifestName))
-				updateCondition := config.UpdateCondition{
+				updateCondition := status.UpdateCondition{
 					RepoName:     cfg.RepoName,
 					ManifestName: cfg.ManifestName,
 					Status:       config.StatusInProgress,
@@ -95,6 +96,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 				err := agent.handleRepoUpdate(artifact, cfg)
 				if err != nil {
 					logger.Println(err)
+					updateCondition.Error = err.Error()
 					updateCondition.Status = config.StatusErr
 					err = agent.publishUpdateCondition(updateCondition)
 					if err != nil {

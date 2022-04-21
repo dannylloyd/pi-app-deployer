@@ -31,6 +31,9 @@ func DownloadExtract(url, dlDir, ghApiToken string) error {
 	req.Header.Set("Authorization", fmt.Sprintf("token %s", ghApiToken))
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
 	_, err = io.Copy(out, resp.Body)
 
 	if err != nil {

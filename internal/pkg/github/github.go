@@ -31,7 +31,7 @@ func GetDownloadURLWithRetries(artifact config.Artifact, latest bool) (string, e
 		time.Sleep(backoff)
 	}
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting download url: %s", err)
 	}
 	return "", fmt.Errorf("an unexpected event occurred, no url found and no error returned")
 }
@@ -74,5 +74,5 @@ func getDownloadURL(artifact config.Artifact, latest bool) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("no artifact found for %s", artifact.Name)
+	return "", fmt.Errorf("no artifact found matching name %s", artifact.Name)
 }

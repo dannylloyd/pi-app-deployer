@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/file"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/github"
@@ -238,7 +239,7 @@ func (a *Agent) startLogForwarder(deplerConfig config.DeployerConfig, f func(con
 	}
 }
 
-func (a *Agent) publishUpdateCondition(c config.UpdateCondition) error {
+func (a *Agent) publishUpdateCondition(c status.UpdateCondition) error {
 	json, err := json.Marshal(c)
 	if err != nil {
 		return fmt.Errorf("marshalling update condition message: %s", err)

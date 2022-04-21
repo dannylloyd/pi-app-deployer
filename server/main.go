@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/redis"
@@ -58,16 +59,21 @@ func main() {
 	})
 
 	messageClient.Subscribe(config.RepoPushStatusTopic, func(message string) {
-		var c config.UpdateCondition
+		// TODO: there can be multiple deployment per repo/manifest. Agent need to send hostname or something, log it here.
+		var c status.UpdateCondition
 		err := json.Unmarshal([]byte(message), &c)
 		if err != nil {
 			logger.Println(fmt.Sprintf("unmarshalling update condition message: %s", err))
 			return
 		}
-		logger.Println(fmt.Sprintf("<%s/%s> deploy condition: %s", c.RepoName, c.ManifestName, c.Status))
+		cString := fmt.Sprintf("<%s/%s> deploy condition: %s", c.RepoName, c.ManifestName, c.Status)
+		if c.Error != "" {
+			cString += fmt.Sprintf("%s, error: %s", cString, c.Error)
+		}
+		logger.Println(cString)
 
 		key := fmt.Sprintf("%s/%s", c.RepoName, c.ManifestName)
-		value := c.Status
+		value := message
 		err = redisClient.WriteCondition(context.Background(), key, value)
 		if err != nil {
 			logger.Println(fmt.Sprintf("writing condition message to redis: %s", err))

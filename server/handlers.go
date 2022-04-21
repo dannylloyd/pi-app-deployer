@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 )
 
@@ -92,10 +93,15 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if c == "" {
-		c = config.StatusUnknown
+	var cond status.UpdateCondition
+	err = json.Unmarshal([]byte(c), &cond)
+	if err != nil {
+		logger.Println(fmt.Sprintf("unmarshalling update condition from redis: %s", err))
+		handleError(w, "Error getting deploy status", http.StatusBadRequest)
+		return
 	}
-	fmt.Fprintf(w, fmt.Sprintf(`{"status":"success","condition":"%s"}`, c))
+
+	fmt.Fprintf(w, fmt.Sprintf(`{"status":"success","condition":%s}`, c))
 }
 
 func handleServicePost(w http.ResponseWriter, r *http.Request) {

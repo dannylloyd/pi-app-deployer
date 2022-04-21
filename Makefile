@@ -12,7 +12,7 @@ test-integration:
 	sudo -E ./test/test-integration.sh
 
 deploy-dev: build
-	scp pi-app-deployer-agent pi@${IP}:dev-pi-app-deployer-agent
+	scp bin/pi-app-deployer-agent pi@${IP}:dev-pi-app-deployer-agent
 
 clean:
 	rm -rf bin/

@@ -32,12 +32,6 @@ type Log struct {
 	Config  Config `json:"config"`
 }
 
-type UpdateCondition struct {
-	Status       string `json:"status"`
-	RepoName     string `json:"repoName"`
-	ManifestName string `json:"manifestName"`
-}
-
 type ServiceActionPayload struct {
 	RepoName     string `json:"repoName"`
 	ManifestName string `json:"manifestName"`
