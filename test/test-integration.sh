@@ -17,6 +17,11 @@ if [[ -z ${HEROKU_API_KEY} ]]; then
   exit 1
 fi
 
+if ! command -v jq &> /dev/null; then
+  apt-get update
+  apt-get install jq -y
+fi
+
 rm -f ${envFile}
 cat <<< "HEROKU_API_KEY=${HEROKU_API_KEY}" > ${envFile}
 
@@ -68,5 +73,18 @@ while [[ ${found} == "false" ]]; do
   i=$((i+1))
   sleep 10
 done
+
+echo "Verifying deploy github action for pi-test was successful"
+sleep 5 # give time for action to complete
+runs=$(curl -s \
+  -H "Accept: application/vnd.github.v3+json" \
+  https://api.github.com/repos/andrewmarklloyd/pi-test/actions/runs)
+
+conclusion=$(echo ${runs} | jq -r ".workflow_runs[] | select((.head_sha == \"${sha}\") and .name == \"Main Deploy\").conclusion")
+
+if [[ ${conclusion} != 'success' ]]; then
+    echo "Expected pi-test Main Deploy workflow run to be success, but got: ${conclusion}"
+    exit 1
+fi
 
 echo "Successfully ran integration tests! Now update this to use Go testing :)"

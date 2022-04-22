@@ -48,13 +48,18 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s", a.RepoName, a.ManifestName)
-	err = redisClient.WriteCondition(r.Context(), key, config.StatusInProgress)
+	uc := status.UpdateCondition{
+		Status:       config.StatusUnknown,
+		RepoName:     a.RepoName,
+		ManifestName: a.ManifestName,
+	}
+
+	err = redisClient.WriteCondition(r.Context(), uc)
 	if err != nil {
 		handleError(w, "Error setting deploy status", http.StatusBadRequest)
 	}
 
-	fmt.Fprintf(w, `{"status":"success"}`)
+	fmt.Fprintf(w, `{"request":"success"}`)
 }
 
 func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
@@ -80,13 +85,12 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s", p.RepoName, p.ManifestName)
-	c, err := redisClient.ReadCondition(r.Context(), key)
+	c, err := redisClient.ReadCondition(r.Context(), p.RepoName, p.ManifestName)
 
 	if err != nil {
-		logger.Println(fmt.Sprintf("Error getting %s deploy status from redis: %s", key, err))
+		logger.Println(fmt.Sprintf("Error getting deploy status from redis: %s. RepoName: %s, ManifestName: %s", err, p.RepoName, p.ManifestName))
 		if err.Error() == "redis: nil" {
-			handleError(w, fmt.Sprintf("Could not find deploy status for %s", key), http.StatusBadRequest)
+			handleError(w, fmt.Sprintf("Could not find deploy status for RepoName: %s, ManifestName: %s", p.RepoName, p.ManifestName), http.StatusBadRequest)
 			return
 		}
 		handleError(w, "Error getting deploy status", http.StatusBadRequest)
@@ -101,7 +105,7 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, c)
+	fmt.Fprintf(w, fmt.Sprintf(`{"request":"success","updateCondition":%s}`, c))
 }
 
 func handleServicePost(w http.ResponseWriter, r *http.Request) {
@@ -140,11 +144,11 @@ func handleServicePost(w http.ResponseWriter, r *http.Request) {
 		handleError(w, "Error publishing event", http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(w, fmt.Sprintf(`{"status":"success"}`))
+	fmt.Fprintf(w, fmt.Sprintf(`{"request":"success"}`))
 }
 
 func handleError(w http.ResponseWriter, err string, statusCode int) {
-	http.Error(w, fmt.Sprintf(`{"status":"error","error":"%s"}`, err), statusCode)
+	http.Error(w, fmt.Sprintf(`{"request":"error","error":"%s"}`, err), statusCode)
 }
 
 func handleHealthCheck(w http.ResponseWriter, r *http.Request) {

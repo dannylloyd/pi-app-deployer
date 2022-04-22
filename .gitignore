@@ -7,3 +7,4 @@ util.sh
 .env
 pi-app-deployer-agent
 pi-app-deployer-server
+tmp

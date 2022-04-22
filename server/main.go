@@ -72,9 +72,7 @@ func main() {
 		}
 		logger.Println(cString)
 
-		key := fmt.Sprintf("%s/%s", c.RepoName, c.ManifestName)
-		value := message
-		err = redisClient.WriteCondition(context.Background(), key, value)
+		err = redisClient.WriteCondition(context.Background(), c)
 		if err != nil {
 			logger.Println(fmt.Sprintf("writing condition message to redis: %s", err))
 			return
