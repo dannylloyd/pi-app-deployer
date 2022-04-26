@@ -11,8 +11,8 @@ test-integration:
 	GOOS=linux GOARCH=amd64 GOARM=5 go build -o pi-app-deployer-agent agent/main.go
 	sudo -E ./test/test-integration.sh
 
-deploy-dev: build
-	scp bin/pi-app-deployer-agent pi@${IP}:dev-pi-app-deployer-agent
+deploy-agent: build
+	ansible-playbook playbook.yaml
 
 clean:
 	rm -rf bin/

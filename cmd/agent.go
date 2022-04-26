@@ -216,7 +216,7 @@ func (a *Agent) installOrUpdateApp(artifact config.Artifact, cfg config.Config) 
 }
 
 // TODO: is there a better way to capture closures without so much nesting?
-func (a *Agent) startLogForwarder(deplerConfig config.DeployerConfig, f func(config.Log)) {
+func (a *Agent) startLogForwarder(deplerConfig config.DeployerConfig, host string, f func(config.Log)) {
 	for _, cfg := range deplerConfig.AppConfigs {
 		if cfg.LogForwarding {
 			go func(n config.Config) {
@@ -229,6 +229,7 @@ func (a *Agent) startLogForwarder(deplerConfig config.DeployerConfig, f func(con
 							l := config.Log{
 								Message: line,
 								Config:  n,
+								Host:    host,
 							}
 							f(l)
 						}

@@ -74,7 +74,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	agent.startLogForwarder(deployerConfig, func(l config.Log) {
+	agent.startLogForwarder(deployerConfig, host, func(l config.Log) {
 		json, err := json.Marshal(l)
 		if err != nil {
 			logger.Println(fmt.Sprintf("marshalling log forwarder message: %s", err))

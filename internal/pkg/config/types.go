@@ -31,6 +31,7 @@ const (
 type Log struct {
 	Message string `json:"message"`
 	Config  Config `json:"config"`
+	Host    string `json:"host"`
 }
 
 type AgentInventoryPayload struct {

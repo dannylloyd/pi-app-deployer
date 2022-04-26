@@ -1,0 +1,20 @@
+- name: Deploy Agents
+  hosts: agents
+  remote_user: pi
+  become: true
+  tasks:
+  - name: Stop deployer agent
+    ansible.builtin.systemd:
+      name: pi-app-deployer-agent
+      state: stopped
+  - name: Copy agent binary
+    ansible.builtin.copy:
+      src: ./bin/pi-app-deployer-agent
+      dest: /usr/local/src/pi-app-deployer-agent
+      mode: '0755'
+      owner: root
+      group: root
+  - name: Start deployer agent
+    ansible.builtin.systemd:
+      name: pi-app-deployer-agent
+      state: started

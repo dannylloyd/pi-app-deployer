@@ -56,7 +56,7 @@ func main() {
 			logger.Println(fmt.Sprintf("unmarshalling log forwarder message: %s", err))
 		}
 
-		forwarderLogger.Println(fmt.Sprintf("<%s_%s>: %s", log.Config.RepoName, log.Config.ManifestName, log.Message))
+		forwarderLogger.Println(fmt.Sprintf("<%s/%s/%s>: %s", log.Config.RepoName, log.Host, log.Config.ManifestName, log.Message))
 	})
 
 	messageClient.Subscribe(config.RepoPushStatusTopic, func(message string) {
