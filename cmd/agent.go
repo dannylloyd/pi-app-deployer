@@ -252,6 +252,28 @@ func (a *Agent) publishUpdateCondition(c status.UpdateCondition) error {
 	return nil
 }
 
+func (a *Agent) publishAgentInventory(m map[string]config.Config, host string, timestamp int64) error {
+	for _, v := range m {
+		p := config.AgentInventoryPayload{
+			RepoName:     v.RepoName,
+			ManifestName: v.ManifestName,
+			Host:         host,
+			Timestamp:    timestamp,
+		}
+
+		j, err := json.Marshal(p)
+		if err != nil {
+			return fmt.Errorf("marshalling agent inventory payload: %s", err)
+		}
+
+		err = a.MqttClient.Publish(config.AgentInventoryTopic, string(j))
+		if err != nil {
+			return fmt.Errorf("publishing agent inventory message: %s", err)
+		}
+	}
+	return nil
+}
+
 func getDownloadDir(a config.Artifact) string {
 	return fmt.Sprintf("/tmp/%s", strings.ReplaceAll(a.RepoName, "/", "_"))
 }

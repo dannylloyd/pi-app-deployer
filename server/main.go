@@ -13,6 +13,7 @@ import (
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/redis"
+
 	gmux "github.com/gorilla/mux"
 )
 
@@ -75,6 +76,20 @@ func main() {
 		err = redisClient.WriteCondition(context.Background(), c)
 		if err != nil {
 			logger.Println(fmt.Sprintf("writing condition message to redis: %s", err))
+			return
+		}
+	})
+
+	messageClient.Subscribe(config.AgentInventoryTopic, func(message string) {
+		p := config.AgentInventoryPayload{}
+		unmarshErr := json.Unmarshal([]byte(message), &p)
+		if unmarshErr != nil {
+			logger.Println("unmarshalling agent inventory payload:", unmarshErr)
+			return
+		}
+		err = redisClient.WriteAgentInventory(context.Background(), p)
+		if err != nil {
+			logger.Println(fmt.Sprintf("writing agent inventory to redis: %s", err))
 			return
 		}
 	})

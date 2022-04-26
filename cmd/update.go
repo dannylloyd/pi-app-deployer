@@ -29,6 +29,11 @@ func init() {
 }
 
 func runUpdate(cmd *cobra.Command, args []string) {
+	host, err := os.Hostname()
+	if err != nil {
+		logger.Fatalln("error getting hostname:", err)
+	}
+
 	herokuAPIKey := os.Getenv("HEROKU_API_KEY")
 	if herokuAPIKey == "" {
 		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
@@ -59,6 +64,16 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		logger.Fatalln("connecting to mqtt: ", err)
 	}
 
+	inventoryTicker := time.NewTicker(30 * time.Second)
+	go func() {
+		for t := range inventoryTicker.C {
+			err := agent.publishAgentInventory(deployerConfig.AppConfigs, host, t.Unix())
+			if err != nil {
+				logger.Println("error publishing agent inventory:", err)
+			}
+		}
+	}()
+
 	agent.startLogForwarder(deployerConfig, func(l config.Log) {
 		json, err := json.Marshal(l)
 		if err != nil {
@@ -86,6 +101,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 					RepoName:     cfg.RepoName,
 					ManifestName: cfg.ManifestName,
 					Status:       config.StatusInProgress,
+					Host:         host,
 				}
 
 				err = agent.publishUpdateCondition(updateCondition)

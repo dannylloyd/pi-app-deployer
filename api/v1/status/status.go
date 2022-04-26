@@ -5,4 +5,5 @@ type UpdateCondition struct {
 	RepoName     string `json:"repoName"`
 	ManifestName string `json:"manifestName"`
 	Error        string `json:"error"`
+	Host         string `json:"host"`
 }

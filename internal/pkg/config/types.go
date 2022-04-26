@@ -15,6 +15,7 @@ const (
 	RepoPushTopic       = "repo/push"
 	LogForwarderTopic   = "logs"
 	RepoPushStatusTopic = "repo/push/status"
+	AgentInventoryTopic = "agent/inventory"
 	ServiceActionTopic  = "service"
 
 	StatusUnknown    = "UNKNOWN"
@@ -30,6 +31,13 @@ const (
 type Log struct {
 	Message string `json:"message"`
 	Config  Config `json:"config"`
+}
+
+type AgentInventoryPayload struct {
+	RepoName     string `json:"repoName"`
+	ManifestName string `json:"manifestName"`
+	Host         string `json:"host"`
+	Timestamp    int64  `json:"timestamp"`
 }
 
 type ServiceActionPayload struct {

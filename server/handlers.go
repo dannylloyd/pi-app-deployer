@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
@@ -35,28 +36,24 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 
 	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", a.RepoName))
 
-	json, err := json.Marshal(a)
+	j, err := json.Marshal(a)
 	if err != nil {
 		logger.Println(err)
 		handleError(w, "error occurred marshalling json", http.StatusInternalServerError)
 		return
 	}
-	err = messageClient.Publish(config.RepoPushTopic, string(json))
+
+	err = redisClient.DeleteConditions(r.Context(), a.RepoName, a.ManifestName)
+	if err != nil {
+		handleError(w, "Error clearing previous deploy status", http.StatusBadRequest)
+		return
+	}
+
+	err = messageClient.Publish(config.RepoPushTopic, string(j))
 	if err != nil {
 		logger.Println(err)
 		handleError(w, "Error publishing event", http.StatusInternalServerError)
 		return
-	}
-
-	uc := status.UpdateCondition{
-		Status:       config.StatusUnknown,
-		RepoName:     a.RepoName,
-		ManifestName: a.ManifestName,
-	}
-
-	err = redisClient.WriteCondition(r.Context(), uc)
-	if err != nil {
-		handleError(w, "Error setting deploy status", http.StatusBadRequest)
 	}
 
 	fmt.Fprintf(w, `{"request":"success"}`)
@@ -85,7 +82,7 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, err := redisClient.ReadCondition(r.Context(), p.RepoName, p.ManifestName)
+	conditions, err := redisClient.ReadConditions(r.Context(), p.RepoName, p.ManifestName)
 
 	if err != nil {
 		logger.Println(fmt.Sprintf("Error getting deploy status from redis: %s. RepoName: %s, ManifestName: %s", err, p.RepoName, p.ManifestName))
@@ -97,15 +94,57 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cond status.UpdateCondition
-	err = json.Unmarshal([]byte(c), &cond)
+	agents, err := redisClient.ReadAgentInventory(r.Context(), p.RepoName, p.ManifestName)
 	if err != nil {
-		logger.Println(fmt.Sprintf("unmarshalling update condition from redis: %s", err))
-		handleError(w, "Error getting deploy status", http.StatusBadRequest)
+		handleError(w, "error listing agents configured to update app", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Fprintf(w, fmt.Sprintf(`{"request":"success","updateCondition":%s}`, c))
+	successfulHosts := map[string]status.UpdateCondition{}
+	unsuccessfulHosts := map[string]status.UpdateCondition{}
+	now := time.Now()
+	for host, timestamp := range agents {
+		cond, ok := conditions[host]
+		if !ok {
+			unsuccessfulHosts[host] = status.UpdateCondition{
+				Host:   host,
+				Status: config.StatusUnknown,
+				Error:  "agent not reporting health check for app",
+			}
+			continue
+		}
+
+		diff := now.Sub(timestamp)
+		if diff.Minutes() > 5 {
+			unsuccessfulHosts[host] = status.UpdateCondition{
+				Host:   host,
+				Status: config.StatusUnknown,
+				Error:  "agent health check for app greater than 5 minutes and considered stale",
+			}
+			continue
+		}
+
+		if cond.Status != config.StatusSuccess {
+			unsuccessfulHosts[host] = cond
+			continue
+		}
+
+		successfulHosts[host] = cond
+	}
+
+	successJson, err := json.Marshal(successfulHosts)
+	if err != nil {
+		handleError(w, "Error marshalling successful hosts", http.StatusBadRequest)
+		return
+	}
+
+	unsuccessJson, err := json.Marshal(unsuccessfulHosts)
+	if err != nil {
+		handleError(w, "Error marshalling unsuccessful hosts", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Fprintf(w, fmt.Sprintf(`{"request":"success","successfulHosts":%s,"unsuccessfulHosts":%s}`, successJson, unsuccessJson))
 }
 
 func handleServicePost(w http.ResponseWriter, r *http.Request) {
