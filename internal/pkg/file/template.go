@@ -3,6 +3,7 @@ package file
 import (
 	"bytes"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -126,6 +127,24 @@ APP_VERSION=%s`
 	if err != nil {
 		return fmt.Errorf("writing service env file: %s", err)
 	}
+	return nil
+}
+
+func WriteDeployerEnvFile(herokuAPIKey string) error {
+	if herokuAPIKey == "" {
+		return fmt.Errorf("heroku api key must not be empty")
+	}
+
+	envFileName := getDeployerEnvFileName(config.PiAppDeployerDir)
+
+	if _, err := os.Stat(envFileName); errors.Is(err, os.ErrNotExist) {
+		content := fmt.Sprintf(`HEROKU_API_KEY=%s`, herokuAPIKey)
+		err := os.WriteFile(envFileName, []byte(content), 0644)
+		if err != nil {
+			return fmt.Errorf("writing deployer env file: %s", err)
+		}
+	}
+
 	return nil
 }
 

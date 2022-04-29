@@ -90,9 +90,13 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact, cfg config.Config) er
 }
 
 func (a *Agent) handleInstall(artifact config.Artifact, cfg config.Config) error {
+	err := file.WriteDeployerEnvFile(a.HerokuAPIKey)
+	if err != nil {
+		return fmt.Errorf("writing deployer env file: %s", err)
+	}
 	url, err := github.GetDownloadURLWithRetries(artifact, true)
 	if err != nil {
-		logger.Fatalln(fmt.Errorf("getting download url for latest release: %s", err))
+		return fmt.Errorf("getting download url for latest release: %s", err)
 	}
 
 	artifact.SHA = "HEAD"

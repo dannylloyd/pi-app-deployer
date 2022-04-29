@@ -5,7 +5,6 @@ set -euo pipefail
 # TODO: move this to install script?
 
 workDir="/home/runner/work/pi-app-deployer/pi-app-deployer"
-envFile="/usr/local/src/.pi-app-deployer-agent.env"
 
 if [[ $(whoami) != "root" ]]; then
   echo "Script must be run as root"
@@ -36,9 +35,6 @@ fi
 
 export REDIS_URL=$(heroku config:get REDIS_URL -a ${DEPLOYER_APP})
 redis-cli -u ${REDIS_URL} --scan --pattern "*andrewmarklloyd/pi-test*" | xargs --no-run-if-empty redis-cli -u ${REDIS_URL} del
-
-rm -f ${envFile}
-cat <<< "HEROKU_API_KEY=${HEROKU_API_KEY}" > ${envFile}
 
 mv ${workDir}/pi-app-deployer-agent /usr/local/src/
 /usr/local/src/pi-app-deployer-agent install \

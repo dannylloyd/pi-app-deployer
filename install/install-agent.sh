@@ -2,10 +2,7 @@
 
 set -euo pipefail
 
-interactive=${interactive:-}
-
 deployerDir="/usr/local/src"
-envFile="${deployerDir}/.pi-app-deployer-agent.env"
 
 osRelease=$(cat /etc/os-release)
 if [[ "${osRelease}" == *"Raspbian"* ]]; then
@@ -31,19 +28,10 @@ if [[ -z ${HEROKU_API_KEY} ]]; then
   exit 1
 fi
 
-if ! command -v jq &> /dev/null; then
-  apt-get update
-  apt-get install jq -y
-fi
-
 if ! command -v curl &> /dev/null; then
   apt-get update
   apt-get install curl -y
 fi
-
-# TODO: write this file in the install command
-rm -f ${envFile}
-echo "HEROKU_API_KEY=${HEROKU_API_KEY}" > ${envFile}
 
 version=$(get_latest_release)
 echo "Downloading version ${version} of pi-app-deployer"
@@ -51,20 +39,4 @@ curl -sL https://github.com/andrewmarklloyd/pi-app-deployer/releases/download/${
 
 mv /tmp/pi-app-deployer-agent ${deployerDir}/pi-app-deployer-agent
 
-if [[ ${interactive} == "true" ]]; then
-  echo "Enter the repo name including the org then press enter:"
-  read repo
-
-  echo "Enter the pi-app-deployer manifest name then press enter:"
-  read manifestName
-
-  echo
-  echo "Running the pi-app-deployer-agent version ${version} installer using the following command:"
-
-  c="${deployerDir}/pi-app-deployer-agent --repo-name ${repo} --manifest-name ${manifestName} --install"
-  echo "${c}"
-
-  eval ${c}
-else
-  echo "pi-app-deployer-agent downloaded, run from ${deployerDir}/pi-app-deployer-agent"
-fi
+echo "pi-app-deployer-agent downloaded, run from ${deployerDir}/pi-app-deployer-agent"
