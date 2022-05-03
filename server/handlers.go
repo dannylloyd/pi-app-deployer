@@ -34,7 +34,7 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s", a.RepoName))
+	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s, manifest %s, SHA %s", a.RepoName, a.ManifestName, a.SHA))
 
 	j, err := json.Marshal(a)
 	if err != nil {
