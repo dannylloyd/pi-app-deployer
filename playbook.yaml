@@ -7,6 +7,10 @@
     ansible.builtin.systemd:
       name: pi-app-deployer-agent
       state: stopped
+  - name: Make deployer directory
+    file:
+      path: /usr/local/src/pi-app-deployer
+      state: directory
   - name: Copy agent binary
     ansible.builtin.copy:
       src: ./bin/pi-app-deployer-agent
