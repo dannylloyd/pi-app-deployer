@@ -1,0 +1,15 @@
+- name: Deploy Agents
+  hosts: "{{ variable_host | default('agents') }}"
+  remote_user: pi
+  become: true
+  tasks:
+  - name: Copy agent binary
+    ansible.builtin.copy:
+      src: ./bin/pi-app-deployer-agent
+      dest: /tmp/pi-app-deployer-agent
+      mode: '0755'
+      owner: root
+      group: root
+  - name: Run agent
+    ansible.builtin.shell: /tmp/pi-app-deployer-agent uninstall --all
+

@@ -45,12 +45,10 @@ func runInstall(cmd *cobra.Command, args []string) {
 
 	herokuApp, err := cmd.Flags().GetString("herokuApp")
 	if err != nil {
-		fmt.Println("error getting herokuApp flag", err)
-		os.Exit(1)
+		logger.Fatalln("error getting herokuApp flag", err)
 	}
 	if herokuApp == "" {
-		fmt.Println("herokuApp flag is required")
-		os.Exit(1)
+		logger.Fatalln("herokuApp flag is required")
 	}
 
 	agent, err := newAgent(herokuAPIKey, herokuApp)
@@ -69,6 +67,8 @@ func runInstall(cmd *cobra.Command, args []string) {
 	}
 
 	logger.Println("Installing application")
+	// writing deployer config here is required since the install
+	// starts the pi-app-deployer-agent systemd unit
 	deployerConfig.SetAppConfig(cfg)
 	deployerConfig.WriteDeployerConfig()
 
@@ -76,10 +76,16 @@ func runInstall(cmd *cobra.Command, args []string) {
 		RepoName:     cfg.RepoName,
 		ManifestName: cfg.ManifestName,
 	}
-	err = agent.handleInstall(a, cfg)
+	cfg, err = agent.handleInstall(a, cfg)
 	if err != nil {
 		logger.Fatalln(fmt.Errorf("failed installation: %s", err))
 	}
+
+	// writing deployer config here is required to
+	// get executable field written which is only found
+	// during the install via the manifest
+	deployerConfig.SetAppConfig(cfg)
+	deployerConfig.WriteDeployerConfig()
 
 	logger.Println("Successfully installed app")
 }
@@ -87,22 +93,18 @@ func runInstall(cmd *cobra.Command, args []string) {
 func getConfig(cmd *cobra.Command) config.Config {
 	repoName, err := cmd.Flags().GetString("repoName")
 	if err != nil {
-		fmt.Println("error getting repoName flag", err)
-		os.Exit(1)
+		logger.Fatalln("error getting repoName flag", err)
 	}
 	if repoName == "" {
-		fmt.Println("repoName flag is required")
-		os.Exit(1)
+		logger.Fatalln("repoName flag is required")
 	}
 
 	manifestName, err := cmd.Flags().GetString("manifestName")
 	if err != nil {
-		fmt.Println("error getting manifestName flag", err)
-		os.Exit(1)
+		logger.Fatalln("error getting manifestName flag", err)
 	}
 	if manifestName == "" {
-		fmt.Println("manifestName flag is required")
-		os.Exit(1)
+		logger.Fatalln("manifestName flag is required")
 	}
 
 	appUser, err := cmd.Flags().GetString("appUser")

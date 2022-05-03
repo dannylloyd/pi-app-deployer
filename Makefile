@@ -14,5 +14,8 @@ test-integration:
 deploy-agent: build
 	ansible-playbook playbook.yaml
 
+deploy-agent-test: build
+	ansible-playbook test-playbook.yaml --extra-vars "variable_host=${HOST}"
+
 clean:
 	rm -rf bin/

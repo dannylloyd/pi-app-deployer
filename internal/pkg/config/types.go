@@ -10,7 +10,7 @@ import (
 // todo: standardize repoName vs repository. also reuse some structs?
 
 const (
-	PiAppDeployerDir = "/usr/local/src"
+	PiAppDeployerDir = "/usr/local/src/pi-app-deployer"
 
 	RepoPushTopic       = "repo/push"
 	LogForwarderTopic   = "logs"
@@ -53,6 +53,7 @@ type Config struct {
 	AppUser       string            `yaml:"appUser"`
 	LogForwarding bool              `yaml:"logForwarding"`
 	EnvVars       map[string]string `yaml:"envVars"`
+	Executable    string            `yaml:"executable"`
 }
 
 type DeployStatusPayload struct {

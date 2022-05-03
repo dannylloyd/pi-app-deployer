@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-deployerDir="/usr/local/src"
+deployerDir="/usr/local/src/pi-app-deployer"
 
 osRelease=$(cat /etc/os-release)
 if [[ "${osRelease}" == *"Raspbian"* ]]; then
@@ -37,6 +37,7 @@ version=$(get_latest_release)
 echo "Downloading version ${version} of pi-app-deployer"
 curl -sL https://github.com/andrewmarklloyd/pi-app-deployer/releases/download/${version}/pi-app-deployer-agent-${version}-linux-${arch}.tar.gz | tar zx -C /tmp
 
+mkdir -p ${deployerDir}
 mv /tmp/pi-app-deployer-agent ${deployerDir}/pi-app-deployer-agent
 
 echo "pi-app-deployer-agent downloaded, run from ${deployerDir}/pi-app-deployer-agent"

@@ -82,6 +82,14 @@ func SystemdUnitEnabled(unitName string) (bool, error) {
 	return false, nil
 }
 
+func DaemonReload() error {
+	output, err := runSystemctlCommand("daemon-reload")
+	if err != nil {
+		return fmt.Errorf("running daemon-reload: %s, %s", err, output)
+	}
+	return nil
+}
+
 func runSystemctlCommand(args ...string) (string, error) {
 	cmd := exec.Command("systemctl", args...)
 	output, err := cmd.CombinedOutput()

@@ -7,4 +7,5 @@ appConfigs:
     logForwarding: true
     envVars:
       MY_CONFIG: testing
-path: /usr/local/src/.pi-app-deployer.config.yaml
+    executable: pi-test-agent-amd64
+path: /usr/local/src/pi-app-deployer/.pi-app-deployer.config.yaml

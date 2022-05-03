@@ -81,7 +81,7 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact, cfg config.Config) er
 		return err
 	}
 	artifact.ArchiveDownloadURL = url
-	err = a.installOrUpdateApp(artifact, cfg)
+	_, err = a.installOrUpdateApp(artifact, cfg)
 	if err != nil {
 		return err
 	}
@@ -89,67 +89,69 @@ func (a *Agent) handleRepoUpdate(artifact config.Artifact, cfg config.Config) er
 	return nil
 }
 
-func (a *Agent) handleInstall(artifact config.Artifact, cfg config.Config) error {
+func (a *Agent) handleInstall(artifact config.Artifact, cfg config.Config) (config.Config, error) {
 	err := file.WriteDeployerEnvFile(a.HerokuAPIKey)
 	if err != nil {
-		return fmt.Errorf("writing deployer env file: %s", err)
+		return cfg, fmt.Errorf("writing deployer env file: %s", err)
 	}
 	url, err := github.GetDownloadURLWithRetries(artifact, true)
 	if err != nil {
-		return fmt.Errorf("getting download url for latest release: %s", err)
+		return cfg, fmt.Errorf("getting download url for latest release: %s", err)
 	}
 
 	artifact.SHA = "HEAD"
 	artifact.ArchiveDownloadURL = url
 
-	err = a.installOrUpdateApp(artifact, cfg)
+	cfg, err = a.installOrUpdateApp(artifact, cfg)
 	if err != nil {
-		return err
+		return cfg, err
 	}
 
-	return nil
+	return cfg, nil
 }
 
-func (a *Agent) installOrUpdateApp(artifact config.Artifact, cfg config.Config) error {
+func (a *Agent) installOrUpdateApp(artifact config.Artifact, cfg config.Config) (config.Config, error) {
 	dlDir := getDownloadDir(artifact)
 	err := file.DownloadExtract(artifact.ArchiveDownloadURL, dlDir, a.GHApiToken)
 	if err != nil {
-		return fmt.Errorf("downloading and extracting artifact: %s", err)
+		return cfg, fmt.Errorf("downloading and extracting artifact: %s", err)
 	}
 
 	m, err := manifest.GetManifest(fmt.Sprintf("%s/.pi-app-deployer.yaml", dlDir), artifact.ManifestName)
 	if err != nil {
-		return fmt.Errorf("getting manifest from directory %s: %s", dlDir, err)
+		return cfg, fmt.Errorf("getting manifest from directory %s: %s", dlDir, err)
 	}
+
+	cfg.Executable = m.Executable
 
 	err = config.ValidateEnvVars(m, cfg)
 	if err != nil {
-		return fmt.Errorf("validating manifest and config env vars: %s", err)
+		return cfg, fmt.Errorf("validating manifest and config env vars: %s", err)
 	}
 
 	err = file.WriteServiceEnvFile(m, a.HerokuAPIKey, artifact.SHA, cfg, "")
 	if err != nil {
-		return fmt.Errorf("writing service file environment file: %s", err)
+		return cfg, fmt.Errorf("writing service file environment file: %s", err)
 	}
 
 	serviceUnit, err := file.EvalServiceTemplate(m, cfg.AppUser)
 	if err != nil {
-		return fmt.Errorf("rendering service template: %s", err)
+		return cfg, fmt.Errorf("rendering service template: %s", err)
 	}
 
 	runScript, err := file.EvalRunScriptTemplate(m, artifact.SHA)
 	if err != nil {
-		return fmt.Errorf("rendering runscript template: %s", err)
+		return cfg, fmt.Errorf("rendering runscript template: %s", err)
 	}
 
 	deployerFile, err := file.EvalDeployerTemplate(a.HerokuApp)
 	if err != nil {
-		return fmt.Errorf("rendering deployer template: %s", err)
+		return cfg, fmt.Errorf("rendering deployer template: %s", err)
 	}
 
 	for _, t := range []string{serviceUnit, runScript, deployerFile} {
 		if t == "" {
-			return fmt.Errorf("one of the templates rendered was empty")
+			return cfg, fmt.Errorf("one of the templates rendered was empty")
 		}
 	}
 
@@ -157,25 +159,25 @@ func (a *Agent) installOrUpdateApp(artifact config.Artifact, cfg config.Config) 
 	serviceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, serviceFile)
 	err = os.WriteFile(serviceFileOutputPath, []byte(serviceUnit), 0644)
 	if err != nil {
-		return fmt.Errorf("writing service file: %s", err)
+		return cfg, fmt.Errorf("writing service file: %s", err)
 	}
 
 	runScriptFile := fmt.Sprintf("run-%s.sh", m.Name)
 	runScriptOutputPath := fmt.Sprintf("%s/%s", dlDir, runScriptFile)
 	err = os.WriteFile(runScriptOutputPath, []byte(runScript), 0644)
 	if err != nil {
-		return fmt.Errorf("writing run script: %s", err)
+		return cfg, fmt.Errorf("writing run script: %s", err)
 	}
 
 	deployerServiceFileOutputPath := fmt.Sprintf("%s/%s", dlDir, "pi-app-deployer-agent.service")
 	err = os.WriteFile(deployerServiceFileOutputPath, []byte(deployerFile), 0644)
 	if err != nil {
-		return fmt.Errorf("writing deployer service file: %s", err)
+		return cfg, fmt.Errorf("writing deployer service file: %s", err)
 	}
 
 	err = file.StopSystemdUnit(m.Name)
 	if err != nil {
-		return err
+		return cfg, err
 	}
 
 	// Don't overwrite agent systemd unit if already exists
@@ -184,7 +186,7 @@ func (a *Agent) installOrUpdateApp(artifact config.Artifact, cfg config.Config) 
 			deployerServiceFileOutputPath: "/etc/systemd/system/pi-app-deployer-agent.service",
 		})
 		if err != nil {
-			return err
+			return cfg, err
 		}
 	}
 
@@ -199,23 +201,90 @@ func (a *Agent) installOrUpdateApp(artifact config.Artifact, cfg config.Config) 
 
 	err = file.CopyWithOwnership(srcDestMap)
 	if err != nil {
-		return err
+		return cfg, err
 	}
 
 	err = file.MakeExecutable([]string{fmt.Sprintf("%s/%s", config.PiAppDeployerDir, runScriptFile), packageBinaryOutputPath})
 	if err != nil {
-		return err
+		return cfg, err
 	}
 
 	err = file.SetupSystemdUnits(m.Name)
 	if err != nil {
-		return err
+		return cfg, err
 	}
 
 	err = os.RemoveAll(dlDir)
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return cfg, fmt.Errorf("%s", err)
 	}
+	return cfg, nil
+}
+
+func unInstall(c map[string]config.Config, repoName, manifestName string) error {
+	for _, v := range c {
+		if v.RepoName == repoName && v.ManifestName == manifestName {
+			err := file.StopSystemdUnit(v.ManifestName)
+			if err != nil {
+				return fmt.Errorf("stopping systemd unit %s: %s", v.ManifestName, err)
+			}
+
+			svcFile := fmt.Sprintf("/etc/systemd/system/%s.service", v.ManifestName)
+			err = os.Remove(svcFile)
+			if err != nil {
+				return fmt.Errorf("removing systemd unit file %s: %s", svcFile, err)
+			}
+		}
+
+		toDelete := []string{
+			fmt.Sprintf("%s/%s", config.PiAppDeployerDir, v.Executable),
+			fmt.Sprintf("%s/.%s.env", config.PiAppDeployerDir, v.ManifestName),
+			fmt.Sprintf("%s/run-%s.sh", config.PiAppDeployerDir, v.ManifestName),
+		}
+		for _, f := range toDelete {
+			err := os.Remove(f)
+			if err != nil {
+				return fmt.Errorf("removing file %s: %s", f, err)
+			}
+		}
+	}
+
+	err := file.DaemonReload()
+	if err != nil {
+		return fmt.Errorf("running daemon-reload: %s", err)
+	}
+
+	err = file.RestartSystemdUnit("pi-app-deployer-agent")
+	if err != nil {
+		return fmt.Errorf("restarting pi-app-deployer-agent systemd unit: %s", err)
+	}
+	return nil
+}
+
+func unInstallAll(c map[string]config.Config) error {
+	for _, v := range c {
+		err := file.StopSystemdUnit(v.ManifestName)
+		if err != nil {
+			return fmt.Errorf("stopping systemd unit %s: %s", v.ManifestName, err)
+		}
+
+		svcFile := fmt.Sprintf("/etc/systemd/system/%s.service", v.ManifestName)
+		err = os.Remove(svcFile)
+		if err != nil {
+			return fmt.Errorf("removing systemd unit file %s: %s", svcFile, err)
+		}
+	}
+
+	err := file.StopSystemdUnit("pi-app-deployer")
+	if err != nil {
+		return fmt.Errorf("stopping pi-app-deployer systemd unit: %s", err)
+	}
+
+	err = os.RemoveAll(config.PiAppDeployerDir)
+	if err != nil {
+		return fmt.Errorf("removing all pi-app-deployer files: %s", err)
+	}
+
 	return nil
 }
 

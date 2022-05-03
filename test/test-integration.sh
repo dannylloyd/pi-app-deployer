@@ -2,9 +2,9 @@
 
 set -euo pipefail
 
-# TODO: move this to install script?
-
 workDir="/home/runner/work/pi-app-deployer/pi-app-deployer"
+deployerDir="/usr/local/src/pi-app-deployer"
+mkdir -p ${deployerDir}
 
 if [[ $(whoami) != "root" ]]; then
   echo "Script must be run as root"
@@ -36,8 +36,8 @@ fi
 export REDIS_URL=$(heroku config:get REDIS_URL -a ${DEPLOYER_APP})
 redis-cli -u ${REDIS_URL} --scan --pattern "*andrewmarklloyd/pi-test*" | xargs --no-run-if-empty redis-cli -u ${REDIS_URL} del
 
-mv ${workDir}/pi-app-deployer-agent /usr/local/src/
-/usr/local/src/pi-app-deployer-agent install \
+mv ${workDir}/pi-app-deployer-agent ${deployerDir}
+${deployerDir}/pi-app-deployer-agent install \
     --appUser runneradmin \
     --repoName andrewmarklloyd/pi-test \
     --manifestName pi-test-amd64 \
@@ -46,8 +46,8 @@ mv ${workDir}/pi-app-deployer-agent /usr/local/src/
     --herokuApp ${DEPLOYER_APP}
 
 sed "s/{{.HerokuApp}}/${DEPLOYER_APP}/g" test/test-int-appconfigs.yaml > /tmp/test.yaml
-grep "MY_CONFIG\=testing" /usr/local/src/.pi-test-amd64.env >/dev/null
-diff /tmp/test.yaml /usr/local/src/.pi-app-deployer.config.yaml
+grep "MY_CONFIG\=testing" ${deployerDir}/.pi-test-amd64.env >/dev/null
+diff /tmp/test.yaml ${deployerDir}/.pi-app-deployer.config.yaml
 
 sleep 10
 journalctl -u pi-app-deployer-agent.service
@@ -75,6 +75,8 @@ found="false"
 while [[ ${found} == "false" ]]; do
   if [[ ${i} -gt 10 ]]; then
     echo "Exceeded max attempts, test failed"
+    echo "Logs from service: ${out}"
+    cat /etc/systemd/system/pi-test-amd64.service
     exit 1
   fi
   out=$(journalctl -u pi-test-amd64.service -n 100)
@@ -96,6 +98,20 @@ conclusion=$(echo ${runs} | jq -r ".workflow_runs[] | select((.head_sha == \"${s
 if [[ ${conclusion} != 'success' ]]; then
     echo "Expected pi-test Main Deploy workflow run to be success, but got: ${conclusion}"
     exit 1
+fi
+
+${deployerDir}/pi-app-deployer-agent uninstall \
+    --repoName andrewmarklloyd/pi-test \
+    --manifestName pi-test-amd64 \
+    --herokuApp ${DEPLOYER_APP}
+
+sleep 5
+journalctl -u pi-app-deployer-agent.service
+systemctl is-active pi-app-deployer-agent.service
+out=$(systemctl list-units -all | grep pi-test-amd64.service >/dev/null)
+if [[ ! -z ${out} ]]; then
+  echo "Expected pi-test-amd64 systemd unit to NOT exist but was found: ${out}"
+  exit 1
 fi
 
 echo "Successfully ran integration tests! Now update this to use Go testing :)"

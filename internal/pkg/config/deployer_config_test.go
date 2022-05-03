@@ -27,6 +27,7 @@ func Test_CreateConfig(t *testing.T) {
 		AppUser:       "pi",
 		LogForwarding: false,
 		EnvVars:       map[string]string{"MY_CONFIG": "foobar", "HELLO_CONFIG": "testing"},
+		Executable:    "pi-test-agent",
 	}
 
 	u, _ := uuid.NewUUID()
@@ -50,6 +51,7 @@ appConfigs:
     envVars:
       HELLO_CONFIG: testing
       MY_CONFIG: foobar
+    executable: pi-test-agent
 path: /tmp/.pi-app-deployer.app.%s.yaml
 `
 	assert.Equal(t, fmt.Sprintf(expectedTemp, u.String()), string(content))
@@ -73,6 +75,7 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 		AppUser:       "pi",
 		LogForwarding: false,
 		EnvVars:       map[string]string{"MY_CONFIG": "foobar", "HELLO_CONFIG": "testing"},
+		Executable:    "pi-test-agent",
 	}
 
 	c2 := Config{
@@ -81,6 +84,7 @@ func Test_CreateMultipleConfigs(t *testing.T) {
 		AppUser:       "app-runner",
 		LogForwarding: true,
 		EnvVars:       map[string]string{"HELLO_WORLD": "hello-world", "CONFIG": "config-test"},
+		Executable:    "pi-test-agent",
 	}
 
 	u, _ := uuid.NewUUID()
@@ -104,6 +108,7 @@ appConfigs:
     envVars:
       CONFIG: config-test
       HELLO_WORLD: hello-world
+    executable: pi-test-agent
   andrewmarklloyd_pi-test_pi-test-arm:
     repoName: andrewmarklloyd/pi-test
     manifestName: pi-test-arm
@@ -112,6 +117,7 @@ appConfigs:
     envVars:
       HELLO_CONFIG: testing
       MY_CONFIG: foobar
+    executable: pi-test-agent
 path: /tmp/.pi-app-deployer.app.%s.yaml
 `
 	assert.Equal(t, fmt.Sprintf(expectedContent, u.String()), string(content))

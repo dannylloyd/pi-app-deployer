@@ -28,9 +28,9 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 [Service]
-EnvironmentFile=/usr/local/src/.sample-app.env
-ExecStart=/usr/local/src/run-sample-app.sh
-WorkingDirectory=/usr/local/src
+EnvironmentFile=/usr/local/src/pi-app-deployer/.sample-app.env
+ExecStart=/usr/local/src/pi-app-deployer/run-sample-app.sh
+WorkingDirectory=/usr/local/src/pi-app-deployer
 StandardOutput=inherit
 StandardError=inherit
 TimeoutStartSec=7
@@ -55,9 +55,9 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 [Service]
-EnvironmentFile=/usr/local/src/.pi-app-deployer-agent.env
-ExecStart=/usr/local/src/pi-app-deployer-agent update --herokuApp heroku-app
-WorkingDirectory=/usr/local/src
+EnvironmentFile=/usr/local/src/pi-app-deployer/.pi-app-deployer-agent.env
+ExecStart=/usr/local/src/pi-app-deployer/pi-app-deployer-agent update --herokuApp heroku-app
+WorkingDirectory=/usr/local/src/pi-app-deployer
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
@@ -104,18 +104,18 @@ fi
 
 unset HEROKU_API_KEY
 
-/usr/local/src/sample-app-agent
+/usr/local/src/pi-app-deployer/sample-app-agent
 `
 
 	assert.Equal(t, expectedRunScriptFile, runScriptFile)
 }
 
 func Test_Helpers(t *testing.T) {
-	expected := "/usr/local/src/pi-app-deployer-agent update --herokuApp testing-app"
+	expected := "/usr/local/src/pi-app-deployer/pi-app-deployer-agent update --herokuApp testing-app"
 	actual := getDeployerExecStart("testing-app")
 	assert.Equal(t, expected, actual)
 
-	expected = "/usr/local/src/pi-app-deployer-agent update --herokuApp testing-app"
+	expected = "/usr/local/src/pi-app-deployer/pi-app-deployer-agent update --herokuApp testing-app"
 	actual = getDeployerExecStart("testing-app")
 	assert.Equal(t, expected, actual)
 }

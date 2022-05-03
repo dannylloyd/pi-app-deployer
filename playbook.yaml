@@ -10,7 +10,7 @@
   - name: Copy agent binary
     ansible.builtin.copy:
       src: ./bin/pi-app-deployer-agent
-      dest: /usr/local/src/pi-app-deployer-agent
+      dest: /usr/local/src/pi-app-deployer/pi-app-deployer-agent
       mode: '0755'
       owner: root
       group: root
