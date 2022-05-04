@@ -16,6 +16,8 @@ var rootCmd = &cobra.Command{
 	Long:  ``,
 }
 
+var version string
+
 func Execute() {
 	cobra.CheckErr(rootCmd.Execute())
 }
@@ -28,6 +30,8 @@ func init() {
 	if u.Username != "root" {
 		logger.Fatalln("agent must be run as root, user found was", u.Username)
 	}
+
+	logger.Println("Version:", version)
 
 	rootCmd.PersistentFlags().String("herokuApp", "", "Name of the Heroku app")
 }
