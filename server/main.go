@@ -60,14 +60,13 @@ func main() {
 	})
 
 	messageClient.Subscribe(config.RepoPushStatusTopic, func(message string) {
-		// TODO: there can be multiple deployment per repo/manifest. Agent need to send hostname or something, log it here.
 		var c status.UpdateCondition
 		err := json.Unmarshal([]byte(message), &c)
 		if err != nil {
 			logger.Println(fmt.Sprintf("unmarshalling update condition message: %s", err))
 			return
 		}
-		cString := fmt.Sprintf("<%s/%s> deploy condition: %s", c.RepoName, c.ManifestName, c.Status)
+		cString := fmt.Sprintf("<%s/%s/%s> deploy condition: %s", c.RepoName, c.ManifestName, c.Host, c.Status)
 		if c.Error != "" {
 			cString += fmt.Sprintf("%s, error: %s", cString, c.Error)
 		}
