@@ -2,8 +2,7 @@
 Description=<<.Description>>
 After=<<.After>>
 Requires=<<.Requires>>
-StartLimitInterval=300
-StartLimitBurst=10
+StartLimitInterval=0
 
 [Install]
 WantedBy=multi-user.target
@@ -14,7 +13,6 @@ ExecStart=<<.ExecStart>>
 WorkingDirectory=<<.WorkingDirectory>>
 StandardOutput=inherit
 StandardError=inherit
-TimeoutStartSec=<<.TimeoutStartSec>>
 Restart=<<.Restart>>
 RestartSec=<<.RestartSec>>
 User=<<.AppUser>>

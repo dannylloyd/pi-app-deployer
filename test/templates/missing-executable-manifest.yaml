@@ -13,6 +13,5 @@ systemd:
     Requires:
     - c.service
   Service:
-    TimeoutStartSec: 7
     Restart: always
     RestartSec: 23

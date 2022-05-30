@@ -21,8 +21,7 @@ func Test_ServiceTemplate(t *testing.T) {
 Description=Sample App
 After=a.service b.service
 Requires=c.service
-StartLimitInterval=300
-StartLimitBurst=10
+StartLimitInterval=0
 
 [Install]
 WantedBy=multi-user.target
@@ -33,7 +32,6 @@ ExecStart=/usr/local/src/pi-app-deployer/run-sample-app.sh
 WorkingDirectory=/usr/local/src/pi-app-deployer
 StandardOutput=inherit
 StandardError=inherit
-TimeoutStartSec=7
 Restart=always
 RestartSec=23
 User=pi
@@ -48,8 +46,7 @@ func Test_EvalDeployerTemplate(t *testing.T) {
 	expectedServiceFile := `[Unit]
 Description=pi-app-deployer-agent
 After=network.target
-StartLimitInterval=300
-StartLimitBurst=10
+StartLimitInterval=0
 
 [Install]
 WantedBy=multi-user.target

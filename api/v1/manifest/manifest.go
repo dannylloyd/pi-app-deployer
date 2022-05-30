@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	DefaultRestart         = "on-failure"
-	DefaultRestartSec      = 5
-	DefaultTimeoutStartSec = 0
+	DefaultRestart    = "on-failure"
+	DefaultRestartSec = 5
 )
 
 type Manifest struct {
@@ -43,9 +42,8 @@ type SystemdUnit struct {
 }
 
 type SystemdService struct {
-	TimeoutStartSec int    `yaml:"TimeoutStartSec"`
-	Restart         string `yaml:"Restart"`
-	RestartSec      int    `yaml:"RestartSec"`
+	Restart    string `yaml:"Restart"`
+	RestartSec int    `yaml:"RestartSec"`
 }
 
 func defaultSystemdUnitAfter() []string {
@@ -134,10 +132,6 @@ func (m *Manifest) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	if m.Systemd.Service.RestartSec == 0 {
 		m.Systemd.Service.RestartSec = DefaultRestartSec
-	}
-
-	if m.Systemd.Service.TimeoutStartSec == 0 {
-		m.Systemd.Service.TimeoutStartSec = DefaultTimeoutStartSec
 	}
 
 	if m.Systemd.Unit.After == nil {

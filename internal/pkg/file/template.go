@@ -28,7 +28,6 @@ type ServiceTemplateData struct {
 	After            string
 	Requires         string
 	ExecStart        string
-	TimeoutStartSec  int
 	Restart          string
 	RestartSec       int
 	EnvironmentFile  string
@@ -57,7 +56,6 @@ func EvalServiceTemplate(m manifest.Manifest, user string) (string, error) {
 	d := ServiceTemplateData{
 		Description:      m.Systemd.Unit.Description,
 		ExecStart:        getExecStartName(m, config.PiAppDeployerDir),
-		TimeoutStartSec:  m.Systemd.Service.TimeoutStartSec,
 		Restart:          m.Systemd.Service.Restart,
 		RestartSec:       m.Systemd.Service.RestartSec,
 		EnvironmentFile:  getServiceEnvFileName(m, config.PiAppDeployerDir),
