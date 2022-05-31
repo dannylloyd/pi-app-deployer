@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 )
@@ -26,6 +27,9 @@ const (
 	ServiceActionStart   = "START"
 	ServiceActionStop    = "STOP"
 	ServiceActionRestart = "RESTART"
+
+	InventoryTickerSchedule = 30 * time.Second
+	InventoryTickerTimeout  = 5 * time.Minute
 )
 
 type Log struct {

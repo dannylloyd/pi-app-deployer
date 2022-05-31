@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
@@ -79,6 +80,7 @@ func main() {
 		}
 	})
 
+	var inventoryTimerMap map[string]*time.Timer = make(map[string]*time.Timer)
 	messageClient.Subscribe(config.AgentInventoryTopic, func(message string) {
 		p := config.AgentInventoryPayload{}
 		unmarshErr := json.Unmarshal([]byte(message), &p)
@@ -86,11 +88,23 @@ func main() {
 			logger.Println("unmarshalling agent inventory payload:", unmarshErr)
 			return
 		}
+
 		err = redisClient.WriteAgentInventory(context.Background(), p)
 		if err != nil {
 			logger.Println(fmt.Sprintf("writing agent inventory to redis: %s", err))
 			return
 		}
+
+		// there can be multiple manifest/repo per host. For
+		// timeout we're only interested in host, so last one wins.
+		currentTimer := inventoryTimerMap[p.Host]
+		if currentTimer != nil {
+			currentTimer.Stop()
+		}
+		timer := time.AfterFunc(config.InventoryTickerTimeout, func() {
+			logger.Println("Agent inventory timeout occurred for host:", p.Host)
+		})
+		inventoryTimerMap[p.Host] = timer
 	})
 
 	router := gmux.NewRouter().StrictSlash(true)
