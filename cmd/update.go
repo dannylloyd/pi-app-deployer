@@ -130,6 +130,10 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		}
 	})
 
+	agent.MqttClient.Subscribe(config.AgentUpdateTopic, func(message string) {
+		logger.Println("New agent version published, updating now")
+	})
+
 	agent.MqttClient.Subscribe(config.ServiceActionTopic, func(message string) {
 		var payload config.ServiceActionPayload
 		err := json.Unmarshal([]byte(message), &payload)

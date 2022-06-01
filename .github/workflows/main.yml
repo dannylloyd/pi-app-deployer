@@ -17,6 +17,11 @@ jobs:
       run: make build
     - name: Test
       run: make test
+    - uses: actions/upload-artifact@v2
+      with:
+        name: pi-app-deployer-agent_${{ github.sha }}
+        path: |
+          ./bin/pi-app-deployer-agent
     - name: Deploy Heroku Production
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
