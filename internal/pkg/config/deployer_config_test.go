@@ -124,6 +124,7 @@ path: /tmp/.pi-app-deployer.app.%s.yaml
 
 	deployerConfig, err = NewDeployerConfig(testConfigPath, "testing")
 	assert.NoError(t, err)
+	assert.False(t, deployerConfig.FeatureAutoUpdateAgent)
 
 	c1Actual := deployerConfig.AppConfigs["andrewmarklloyd_pi-test_pi-test-arm"]
 	assert.Equal(t, "pi", c1Actual.AppUser)
@@ -197,4 +198,31 @@ func Test_configToKey(t *testing.T) {
 	}
 	k := configToKey(c1)
 	assert.Equal(t, "andrewmarklloyd_pi-test_pi-test-arm", k)
+}
+
+func Test_AutoUpdateFeature(t *testing.T) {
+	existingConfig := `herokuApp: testing
+featureAutoUpdateAgent: true
+appConfigs:
+  andrewmarklloyd_pi-test-2_pi-test-amd64:
+    repoName: andrewmarklloyd/pi-test-2
+    manifestName: pi-test-amd64
+    appUser: app-runner
+    logForwarding: true
+    envVars:
+      CONFIG: config-test
+      HELLO_WORLD: hello-world
+    executable: pi-test-agent
+path: /tmp/.pi-app-deployer.app.%s.yaml
+`
+
+	u, _ := uuid.NewUUID()
+	testConfigPath := fmt.Sprintf("/tmp/.pi-app-deployer.app.%s.yaml", u.String())
+	err := os.WriteFile(testConfigPath, []byte(existingConfig), 0644)
+	assert.NoError(t, err)
+
+	herokuApp := "testing"
+	deployerConfig, err := NewDeployerConfig(testConfigPath, herokuApp)
+
+	assert.True(t, deployerConfig.FeatureAutoUpdateAgent)
 }
