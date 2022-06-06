@@ -131,7 +131,17 @@ func runUpdate(cmd *cobra.Command, args []string) {
 	})
 
 	agent.MqttClient.Subscribe(config.AgentUpdateTopic, func(message string) {
-		logger.Println("New agent version published, updating now")
+		var artifact config.Artifact
+		err := json.Unmarshal([]byte(message), &artifact)
+		if err != nil {
+			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
+			return
+		}
+		logger.Println("New agent version published, updating now", artifact)
+		err = agent.handleDeployerAgentUpdate(artifact)
+		if err != nil {
+			logger.Println("error updating agent version:", err)
+		}
 	})
 
 	agent.MqttClient.Subscribe(config.ServiceActionTopic, func(message string) {
