@@ -114,4 +114,6 @@ if [[ ! -z ${out} ]]; then
   exit 1
 fi
 
+# test updating the agent itself is successful?
+
 echo "Successfully ran integration tests! Now update this to use Go testing :)"

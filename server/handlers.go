@@ -100,6 +100,12 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(agents) == 0 {
+		logger.Println("length of agents is 0 indicating a request for deploy status occurred but no hosts are configured for this app")
+		handleError(w, "no agents are configured for this app", http.StatusBadRequest)
+		return
+	}
+
 	successfulHosts := map[string]status.UpdateCondition{}
 	unsuccessfulHosts := map[string]status.UpdateCondition{}
 	now := time.Now()

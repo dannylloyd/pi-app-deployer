@@ -94,6 +94,42 @@ func runUpdate(cmd *cobra.Command, args []string) {
 			return
 		}
 
+		if false {
+			if artifact.RepoName == "andrewmarklloyd/pi-app-deployer" && artifact.ManifestName == "pi-app-deployer-agent" {
+				logger.Println("New pi-app-deployer-agent version published, updating now", artifact)
+				updateCondition := status.UpdateCondition{
+					RepoName:     artifact.RepoName,
+					ManifestName: artifact.ManifestName,
+					Status:       config.StatusInProgress,
+					Host:         host,
+				}
+
+				err = agent.publishUpdateCondition(updateCondition)
+				if err != nil {
+					// log but don't block update from proceeding
+					logger.Println(err)
+				}
+
+				err = agent.handleDeployerAgentUpdate(artifact)
+				if err != nil {
+					logger.Println("error updating agent version:", err)
+					updateCondition.Error = err.Error()
+					updateCondition.Status = config.StatusErr
+					err = agent.publishUpdateCondition(updateCondition)
+					if err != nil {
+						logger.Println(err)
+					}
+					return
+				}
+
+				updateCondition.Status = config.StatusSuccess
+				err = agent.publishUpdateCondition(updateCondition)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+		}
+
 		for _, cfg := range deployerConfig.AppConfigs {
 			if artifact.RepoName == cfg.RepoName && artifact.ManifestName == cfg.ManifestName {
 				logger.Println(fmt.Sprintf("updating repo %s with manifest name %s", cfg.RepoName, cfg.ManifestName))
@@ -127,20 +163,6 @@ func runUpdate(cmd *cobra.Command, args []string) {
 					logger.Println(err)
 				}
 			}
-		}
-	})
-
-	agent.MqttClient.Subscribe(config.AgentUpdateTopic, func(message string) {
-		var artifact config.Artifact
-		err := json.Unmarshal([]byte(message), &artifact)
-		if err != nil {
-			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
-			return
-		}
-		logger.Println("New agent version published, updating now", artifact)
-		err = agent.handleDeployerAgentUpdate(artifact)
-		if err != nil {
-			logger.Println("error updating agent version:", err)
 		}
 	})
 

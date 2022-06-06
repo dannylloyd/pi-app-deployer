@@ -17,7 +17,6 @@ const (
 	LogForwarderTopic   = "logs"
 	RepoPushStatusTopic = "repo/push/status"
 	AgentInventoryTopic = "agent/inventory"
-	AgentUpdateTopic    = "agent/update"
 	ServiceActionTopic  = "service"
 
 	StatusUnknown    = "UNKNOWN"
