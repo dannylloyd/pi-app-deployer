@@ -3,10 +3,6 @@
   remote_user: pi
   become: true
   tasks:
-  - name: Stop deployer agent
-    ansible.builtin.systemd:
-      name: pi-app-deployer-agent
-      state: stopped
   - name: Make deployer directory
     file:
       path: /usr/local/src/pi-app-deployer
@@ -19,7 +15,7 @@
       owner: root
       group: root
       force: yes
-  - name: Start deployer agent
+  - name: Restart deployer agent
     ansible.builtin.systemd:
       name: pi-app-deployer-agent
-      state: started
+      state: restarted

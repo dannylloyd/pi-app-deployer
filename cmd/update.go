@@ -59,6 +59,10 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		logger.Fatalln("error getting app configs:", err)
 	}
 
+	if deployerConfig.FeatureAutoUpdateAgent {
+		logger.Println("Auto update agent feature flag set to true")
+	}
+
 	err = agent.MqttClient.Connect()
 	if err != nil {
 		logger.Fatalln("connecting to mqtt: ", err)
