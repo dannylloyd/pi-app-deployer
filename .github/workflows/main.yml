@@ -29,13 +29,14 @@ jobs:
         SERVER_API_KEY: ${{ secrets.SERVER_API_KEY_PROD }}
       run: ./.github/scripts/deploy-heroku.sh pi-app-deployer
     - name: Deploy Agents
-      uses: andrewmarklloyd/pi-app-deployer-action@main
+      uses: andrewmarklloyd/pi-app-deployer-action@add-name-arg
       env:
         PI_APP_DEPLOYER_API_KEY: ${{ secrets.PI_APP_DEPLOYER_API_KEY }}
       with:
         repoName: andrewmarklloyd/pi-app-deployer
         manifestName: pi-app-deployer-agent
         host: https://pi-app-deployer.herokuapp.com
+        artifactName: pi-app-deployer-agent_${{ github.sha }}
     - name: Integration
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
