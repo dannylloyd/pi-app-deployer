@@ -15,6 +15,7 @@ jobs:
     - name: Download artifact
       uses: dawidd6/action-download-artifact@v2
       with:
+        workflow: main.yml
         branch: main
         name: pi-app-deployer-agent_${{ github.sha }}
     - name: Display structure of downloaded files
