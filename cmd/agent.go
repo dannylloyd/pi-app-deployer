@@ -134,14 +134,21 @@ func (a *Agent) handleDeployerAgentUpdate(artifact config.Artifact) error {
 		return fmt.Errorf("running daemon-reload: %s", err)
 	}
 
-	err = file.RestartSystemdUnit("pi-app-deployer-agent")
-	if err != nil {
-		return fmt.Errorf("restarting pi-app-deployer-agent systemd unit: %s", err)
-	}
-
 	err = os.RemoveAll(dlDir)
 	if err != nil {
 		return fmt.Errorf("removing tmp download directory: %s", err)
+	}
+
+	if err := os.WriteFile(fmt.Sprintf("%s/%s", config.PiAppDeployerDir, ".update-in-progress"), []byte("true"), 0644); err != nil {
+		return fmt.Errorf("writing in progress file: %s", err)
+	}
+
+	// this restarts the currently running process. no code
+	// will execute after this is run.
+	logger.Println("Restarting systemd unit now")
+	err = file.RestartSystemdUnit("pi-app-deployer-agent")
+	if err != nil {
+		return fmt.Errorf("restarting pi-app-deployer-agent systemd unit: %s", err)
 	}
 
 	return nil

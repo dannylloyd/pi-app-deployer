@@ -54,6 +54,27 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		logger.Fatalln(fmt.Errorf("error creating agent: %s", err))
 	}
 
+	updateProgressFile := fmt.Sprintf("%s/%s", config.PiAppDeployerDir, ".update-in-progress")
+	// TODO: need to clean this up instead of hard coding
+	if _, err := os.Stat(updateProgressFile); err == nil {
+		updateCondition := status.UpdateCondition{
+			RepoName:     "andrewmarklloyd/pi-app-deployer",
+			ManifestName: "pi-app-deployer-agent",
+			Status:       config.StatusSuccess,
+			Host:         host,
+		}
+
+		err = agent.publishUpdateCondition(updateCondition)
+		if err != nil {
+			logger.Println("Error publishing success of previously running version update. This will cause problems attempting to further update the agent:", err)
+		}
+
+		err = os.Remove(updateProgressFile)
+		if err != nil {
+			logger.Println("removing update progress file:", err)
+		}
+	}
+
 	deployerConfig, err := config.NewDeployerConfig(config.DeployerConfigFile, herokuApp)
 	if err != nil {
 		logger.Fatalln("error getting app configs:", err)
@@ -114,6 +135,8 @@ func runUpdate(cmd *cobra.Command, args []string) {
 					logger.Println(err)
 				}
 
+				// note the last step of this function is
+				// to restart the systemd unit.
 				err = agent.handleDeployerAgentUpdate(artifact)
 				if err != nil {
 					logger.Println("error updating agent version:", err)
@@ -124,12 +147,6 @@ func runUpdate(cmd *cobra.Command, args []string) {
 						logger.Println(err)
 					}
 					return
-				}
-
-				updateCondition.Status = config.StatusSuccess
-				err = agent.publishUpdateCondition(updateCondition)
-				if err != nil {
-					logger.Println(err)
 				}
 			}
 		}
