@@ -18,5 +18,6 @@ jobs:
         workflow: main.yml
         branch: main
         name: pi-app-deployer-agent_${{ github.sha }}
+        path: bin
     - name: Display structure of downloaded files
       run: ls -R
