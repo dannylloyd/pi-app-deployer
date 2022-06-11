@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
@@ -91,16 +90,11 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	var transientInventory bool
-	if os.Getenv("INVENTORY_TRANSIENT") == "" {
-		transientInventory = false
-	} else {
-		transientInventory, _ = strconv.ParseBool(os.Getenv("INVENTORY_TRANSIENT"))
-		if transientInventory {
-			logger.Println("Transient inventory configured, setting TTL for heartbeats")
-		}
+	// this is only used for CI testing
+	transientInventory := false
+	if os.Getenv("INVENTORY_TRANSIENT") != "" {
+		transientInventory = true
 	}
-
 	inventoryTicker := time.NewTicker(config.InventoryTickerSchedule)
 	go func() {
 		for t := range inventoryTicker.C {

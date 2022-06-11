@@ -121,6 +121,12 @@ APP_VERSION=%s`
 	for _, k := range keys {
 		envTemplate += fmt.Sprintf("\n%s=%s", k, cfg.EnvVars[k])
 	}
+
+	// this is only used for CI testing
+	envVar := os.Getenv("INVENTORY_TRANSIENT")
+	if envVar != "" {
+		envTemplate += fmt.Sprintf("\nINVENTORY_TRANSIENT=%s", "true")
+	}
 	err := os.WriteFile(getServiceEnvFileName(m, outpath), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
 	if err != nil {
 		return fmt.Errorf("writing service env file: %s", err)
