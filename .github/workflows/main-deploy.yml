@@ -12,8 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/download-artifact@v3
+    - name: Download artifact
+      uses: dawidd6/action-download-artifact@v2
       with:
+        branch: main
         name: pi-app-deployer-agent_${{ github.sha }}
     - name: Display structure of downloaded files
       run: ls -R
