@@ -121,11 +121,8 @@ func (a *Agent) handleDeployerAgentUpdate(artifact config.Artifact) error {
 		return fmt.Errorf("copying deployer systemd unit file: %s", err)
 	}
 
-	err = file.CopyWithOwnership(map[string]string{
-		fmt.Sprintf("%s/pi-app-deployer-agent", dlDir): fmt.Sprintf("%s/pi-app-deployer-agent", config.PiAppDeployerDir),
-	})
-	if err != nil {
-		return fmt.Errorf("copying pi-app-deployer-agent: %s", err)
+	if err := file.MoveFile(fmt.Sprintf("%s/pi-app-deployer-agent", dlDir), fmt.Sprintf("%s/pi-app-deployer-agent", config.PiAppDeployerDir)); err != nil {
+		return fmt.Errorf("moving pi-app-deployer-agent: %s", err)
 	}
 
 	err = file.DaemonReload()

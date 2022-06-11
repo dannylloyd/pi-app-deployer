@@ -53,3 +53,10 @@ func MakeExecutable(paths []string) error {
 	}
 	return nil
 }
+
+func MoveFile(src, dest string) error {
+	if err := os.Rename(src, dest); err != nil {
+		return fmt.Errorf("renaming file: %s", err)
+	}
+	return nil
+}
