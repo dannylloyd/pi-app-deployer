@@ -19,5 +19,37 @@ jobs:
         branch: main
         name: pi-app-deployer-agent_${{ github.sha }}
         path: bin
-    - name: Display structure of downloaded files
-      run: ls -R
+    - name: Deploy Heroku Production
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        GITHUB_SHA:  ${{ github.sha }}
+        SERVER_API_KEY: ${{ secrets.SERVER_API_KEY_PROD }}
+      run: ./.github/scripts/deploy-heroku.sh pi-app-deployer
+    - name: Deploy Agents
+      uses: andrewmarklloyd/pi-app-deployer-action@add-name-arg
+      env:
+        PI_APP_DEPLOYER_API_KEY: ${{ secrets.PI_APP_DEPLOYER_API_KEY }}
+      with:
+        repoName: andrewmarklloyd/pi-app-deployer
+        manifestName: pi-app-deployer-agent
+        host: https://pi-app-deployer.herokuapp.com
+        artifactName: pi-app-deployer-agent_${{ github.sha }}
+    - name: Integration
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        GH_COMMIT_TOKEN: ${{ secrets.GH_COMMIT_TOKEN }}
+      run: |
+        loginctl enable-linger runner
+        sleep 2
+        make DEPLOYER_APP=pi-app-deployer test-integration
+    - uses: ravsamhq/notify-slack-action@v1
+      if: always()
+      with:
+        status: ${{ job.status }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        notification_title: '{workflow} has {status_message}'
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>'
+        footer: 'Linked Repo <{repo_url}|{repo}> | <{workflow_url}|View Workflow>'
+        notify_when: 'failure'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
