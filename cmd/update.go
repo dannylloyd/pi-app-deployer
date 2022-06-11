@@ -71,6 +71,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 	updateProgressFile := fmt.Sprintf("%s/%s", config.PiAppDeployerDir, ".update-in-progress")
 	// TODO: need to clean this up instead of hard coding
 	if _, err := os.Stat(updateProgressFile); err == nil {
+		logger.Println("Previous update was in progress, publishing success now")
 		updateCondition := status.UpdateCondition{
 			RepoName:     "andrewmarklloyd/pi-app-deployer",
 			ManifestName: "pi-app-deployer-agent",
