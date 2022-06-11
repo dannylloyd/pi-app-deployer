@@ -101,6 +101,7 @@ func runSystemctlCommand(args ...string) (string, error) {
 }
 
 func TailSystemdLogs(systemdUnit string, ch chan string) error {
+	// TODO: can we do something like -n -1? To prevent the "Logs begin at" log message
 	cmd := exec.Command("journalctl", "-u", systemdUnit, "-f", "-n 0")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

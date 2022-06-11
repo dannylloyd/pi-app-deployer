@@ -54,6 +54,20 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		logger.Fatalln(fmt.Errorf("error creating agent: %s", err))
 	}
 
+	deployerConfig, err := config.NewDeployerConfig(config.DeployerConfigFile, herokuApp)
+	if err != nil {
+		logger.Fatalln("error getting app configs:", err)
+	}
+
+	if deployerConfig.FeatureAutoUpdateAgent {
+		logger.Println("Auto update agent feature flag set to true")
+	}
+
+	err = agent.MqttClient.Connect()
+	if err != nil {
+		logger.Fatalln("connecting to mqtt: ", err)
+	}
+
 	updateProgressFile := fmt.Sprintf("%s/%s", config.PiAppDeployerDir, ".update-in-progress")
 	// TODO: need to clean this up instead of hard coding
 	if _, err := os.Stat(updateProgressFile); err == nil {
@@ -73,20 +87,6 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		if err != nil {
 			logger.Println("removing update progress file:", err)
 		}
-	}
-
-	deployerConfig, err := config.NewDeployerConfig(config.DeployerConfigFile, herokuApp)
-	if err != nil {
-		logger.Fatalln("error getting app configs:", err)
-	}
-
-	if deployerConfig.FeatureAutoUpdateAgent {
-		logger.Println("Auto update agent feature flag set to true")
-	}
-
-	err = agent.MqttClient.Connect()
-	if err != nil {
-		logger.Fatalln("connecting to mqtt: ", err)
 	}
 
 	inventoryTicker := time.NewTicker(config.InventoryTickerSchedule)
