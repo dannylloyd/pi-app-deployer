@@ -43,6 +43,7 @@ type AgentInventoryPayload struct {
 	ManifestName string `json:"manifestName"`
 	Host         string `json:"host"`
 	Timestamp    int64  `json:"timestamp"`
+	Transient    bool   `json:"transient"`
 }
 
 type ServiceActionPayload struct {

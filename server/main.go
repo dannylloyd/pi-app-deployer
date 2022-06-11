@@ -89,7 +89,11 @@ func main() {
 			return
 		}
 
-		err = redisClient.WriteAgentInventory(context.Background(), p)
+		expiration := 0 * time.Minute
+		if p.Transient {
+			expiration = 5 * time.Minute
+		}
+		err = redisClient.WriteAgentInventory(context.Background(), p, expiration)
 		if err != nil {
 			logger.Println(fmt.Sprintf("writing agent inventory to redis: %s", err))
 			return

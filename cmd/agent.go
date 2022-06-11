@@ -391,7 +391,7 @@ func (a *Agent) publishUpdateCondition(c status.UpdateCondition) error {
 	return nil
 }
 
-func (a *Agent) publishAgentInventory(m map[string]config.Config, host string, timestamp int64) error {
+func (a *Agent) publishAgentInventory(m map[string]config.Config, host string, timestamp int64, transient bool) error {
 	for _, v := range m {
 		p := config.AgentInventoryPayload{
 			RepoName:     v.RepoName,
@@ -416,6 +416,7 @@ func (a *Agent) publishAgentInventory(m map[string]config.Config, host string, t
 		ManifestName: "pi-app-deployer-agent",
 		Host:         host,
 		Timestamp:    timestamp,
+		Transient:    transient,
 	}
 
 	j, err := json.Marshal(p)

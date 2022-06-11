@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
@@ -90,10 +91,17 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	var transientInventory bool
+	if os.Getenv("INVENTORY_TRANSIENT") == "" {
+		transientInventory = false
+	} else {
+		transientInventory, _ = strconv.ParseBool(os.Getenv("INVENTORY_TRANSIENT"))
+	}
+
 	inventoryTicker := time.NewTicker(config.InventoryTickerSchedule)
 	go func() {
 		for t := range inventoryTicker.C {
-			err := agent.publishAgentInventory(deployerConfig.AppConfigs, host, t.Unix())
+			err := agent.publishAgentInventory(deployerConfig.AppConfigs, host, t.Unix(), transientInventory)
 			if err != nil {
 				logger.Println("error publishing agent inventory:", err)
 			}

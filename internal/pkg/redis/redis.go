@@ -84,9 +84,9 @@ func (r *Redis) WriteCondition(ctx context.Context, uc status.UpdateCondition) e
 	return nil
 }
 
-func (r *Redis) WriteAgentInventory(ctx context.Context, c config.AgentInventoryPayload) error {
+func (r *Redis) WriteAgentInventory(ctx context.Context, c config.AgentInventoryPayload, expiration time.Duration) error {
 	key := getAgentInventoryWriteKey(c.RepoName, c.ManifestName, c.Host)
-	d := r.client.Set(ctx, key, c.Timestamp, 0)
+	d := r.client.Set(ctx, key, c.Timestamp, expiration)
 	err := d.Err()
 	if err != nil {
 		return err
