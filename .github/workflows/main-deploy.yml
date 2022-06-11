@@ -19,6 +19,13 @@ jobs:
         branch: main
         name: pi-app-deployer-agent_${{ github.sha }}
         path: bin
+    - name: Download artifact
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: main.yml
+        branch: main
+        name: pi-app-deployer-server_${{ github.sha }}
+        path: bin
     - name: Deploy Heroku Production
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
