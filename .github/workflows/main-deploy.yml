@@ -33,7 +33,7 @@ jobs:
         SERVER_API_KEY: ${{ secrets.SERVER_API_KEY_PROD }}
       run: ./.github/scripts/deploy-heroku.sh pi-app-deployer
     - name: Deploy Agents
-      uses: andrewmarklloyd/pi-app-deployer-action@add-name-arg
+      uses: andrewmarklloyd/pi-app-deployer-action@main
       env:
         PI_APP_DEPLOYER_API_KEY: ${{ secrets.PI_APP_DEPLOYER_API_KEY }}
       with:
