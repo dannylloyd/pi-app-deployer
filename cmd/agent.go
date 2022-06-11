@@ -398,6 +398,7 @@ func (a *Agent) publishAgentInventory(m map[string]config.Config, host string, t
 			ManifestName: v.ManifestName,
 			Host:         host,
 			Timestamp:    timestamp,
+			Transient:    transient,
 		}
 
 		j, err := json.Marshal(p)

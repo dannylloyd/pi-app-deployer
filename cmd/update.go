@@ -96,6 +96,9 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		transientInventory = false
 	} else {
 		transientInventory, _ = strconv.ParseBool(os.Getenv("INVENTORY_TRANSIENT"))
+		if transientInventory {
+			logger.Println("Transient inventory configured, setting TTL for heartbeats")
+		}
 	}
 
 	inventoryTicker := time.NewTicker(config.InventoryTickerSchedule)
