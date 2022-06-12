@@ -122,11 +122,6 @@ APP_VERSION=%s`
 		envTemplate += fmt.Sprintf("\n%s=%s", k, cfg.EnvVars[k])
 	}
 
-	// this is only used for CI testing
-	envVar := os.Getenv("INVENTORY_TRANSIENT")
-	if envVar != "" {
-		envTemplate += fmt.Sprintf("\nINVENTORY_TRANSIENT=%s", "true")
-	}
 	err := os.WriteFile(getServiceEnvFileName(m, outpath), []byte(fmt.Sprintf(envTemplate, herokuAPIKey, version)), 0644)
 	if err != nil {
 		return fmt.Errorf("writing service env file: %s", err)
@@ -143,6 +138,11 @@ func WriteDeployerEnvFile(herokuAPIKey string) error {
 
 	if _, err := os.Stat(envFileName); errors.Is(err, os.ErrNotExist) {
 		content := fmt.Sprintf(`HEROKU_API_KEY=%s`, herokuAPIKey)
+		// this is only used for CI testing
+		envVar := os.Getenv("INVENTORY_TRANSIENT")
+		if envVar != "" {
+			content += fmt.Sprintf("\nINVENTORY_TRANSIENT=%s", "true")
+		}
 		err := os.WriteFile(envFileName, []byte(content), 0644)
 		if err != nil {
 			return fmt.Errorf("writing deployer env file: %s", err)
