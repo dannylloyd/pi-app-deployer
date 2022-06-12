@@ -91,7 +91,7 @@ func main() {
 
 		expiration := 0 * time.Minute
 		if p.Transient {
-			expiration = 5 * time.Minute
+			expiration = 1 * time.Minute
 		}
 		err = redisClient.WriteAgentInventory(context.Background(), p, expiration)
 		if err != nil {
@@ -101,14 +101,16 @@ func main() {
 
 		// there can be multiple manifest/repo per host. For
 		// timeout we're only interested in host, so last one wins.
-		currentTimer := inventoryTimerMap[p.Host]
-		if currentTimer != nil {
-			currentTimer.Stop()
+		if !p.Transient {
+			currentTimer := inventoryTimerMap[p.Host]
+			if currentTimer != nil {
+				currentTimer.Stop()
+			}
+			timer := time.AfterFunc(config.InventoryTickerTimeout, func() {
+				logger.Println("Agent inventory timeout occurred for host:", p.Host)
+			})
+			inventoryTimerMap[p.Host] = timer
 		}
-		timer := time.AfterFunc(config.InventoryTickerTimeout, func() {
-			logger.Println("Agent inventory timeout occurred for host:", p.Host)
-		})
-		inventoryTimerMap[p.Host] = timer
 	})
 
 	router := gmux.NewRouter().StrictSlash(true)
