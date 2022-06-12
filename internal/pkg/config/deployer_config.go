@@ -12,8 +12,7 @@ import (
 var DeployerConfigFile = fmt.Sprintf("%s/.pi-app-deployer.config.yaml", PiAppDeployerDir)
 
 type DeployerConfig struct {
-	HerokuApp              string `yaml:"herokuApp"`
-	FeatureAutoUpdateAgent bool   `yaml:"featureAutoUpdateAgent,omitempty"`
+	HerokuApp string `yaml:"herokuApp"`
 	// TODO: should this really just be a manifest?
 	AppConfigs map[string]Config `yaml:"appConfigs"`
 	Path       string            `yaml:"path,omitempty"`
