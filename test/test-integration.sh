@@ -75,7 +75,7 @@ echo "Waiting for successful update of service"
 i=0
 found="false"
 while [[ ${found} == "false" ]]; do
-  if [[ ${i} -gt 10 ]]; then
+  if [[ ${i} -gt 20 ]]; then
     echo "Exceeded max attempts, test failed"
     echo "Logs from service: ${out}"
     cat /etc/systemd/system/pi-test-amd64.service

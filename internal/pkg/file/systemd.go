@@ -101,7 +101,7 @@ func runSystemctlCommand(args ...string) (string, error) {
 }
 
 func TailSystemdLogs(systemdUnit string, ch chan string) error {
-	cmd := exec.Command("journalctl", "-u", systemdUnit, "-f", "-n 0")
+	cmd := exec.Command("journalctl", "-u", systemdUnit, "-f", "-n 0", "--output", "cat")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
