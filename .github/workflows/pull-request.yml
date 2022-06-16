@@ -25,7 +25,6 @@ jobs:
     - name: Integration
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        GH_COMMIT_TOKEN: ${{ secrets.GH_COMMIT_TOKEN }}
       run: |
         loginctl enable-linger runner
         sleep 2
