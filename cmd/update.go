@@ -31,43 +31,41 @@ func init() {
 func runUpdate(cmd *cobra.Command, args []string) {
 	host, err := os.Hostname()
 	if err != nil {
-		logger.Fatalln("error getting hostname:", err)
+		logger.Fatalf("error getting hostname: %s", err)
 	}
 
 	herokuAPIKey := os.Getenv("HEROKU_API_KEY")
 	if herokuAPIKey == "" {
-		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
+		logger.Fatal("HEROKU_API_TOKEN environment variable is required")
 	}
 
 	herokuApp, err := cmd.Flags().GetString("herokuApp")
 	if err != nil {
-		fmt.Println("error getting herokuApp flag", err)
-		os.Exit(1)
+		logger.Fatalf("error getting herokuApp flag: %s", err)
 	}
 	if herokuApp == "" {
-		fmt.Println("herokuApp flag is required")
-		os.Exit(1)
+		logger.Fatal("herokuApp flag is required")
 	}
 
 	agent, err := newAgent(herokuAPIKey, herokuApp)
 	if err != nil {
-		logger.Fatalln(fmt.Errorf("error creating agent: %s", err))
+		logger.Fatalf("error creating agent: %s", err)
 	}
 
 	deployerConfig, err := config.NewDeployerConfig(config.DeployerConfigFile, herokuApp)
 	if err != nil {
-		logger.Fatalln("error getting app configs:", err)
+		logger.Fatalf("error getting app configs: %s", err)
 	}
 
 	err = agent.MqttClient.Connect()
 	if err != nil {
-		logger.Fatalln("connecting to mqtt: ", err)
+		logger.Fatalf("connecting to mqtt: %s", err)
 	}
 
 	updateProgressFile := fmt.Sprintf("%s/%s", config.PiAppDeployerDir, ".update-in-progress")
 	// TODO: need to clean this up instead of hard coding
 	if _, err := os.Stat(updateProgressFile); err == nil {
-		logger.Println("Previous update was in progress, publishing success now")
+		logger.Info("Previous update was in progress, publishing success now")
 		updateCondition := status.UpdateCondition{
 			RepoName:     "andrewmarklloyd/pi-app-deployer",
 			ManifestName: "pi-app-deployer-agent",
@@ -77,12 +75,12 @@ func runUpdate(cmd *cobra.Command, args []string) {
 
 		err = agent.publishUpdateCondition(updateCondition)
 		if err != nil {
-			logger.Println("Error publishing success of previously running version update. This will cause problems attempting to further update the agent:", err)
+			logger.Errorf("Error publishing success of previously running version update. This will cause problems attempting to further update the agent: %s", err)
 		}
 
 		err = os.Remove(updateProgressFile)
 		if err != nil {
-			logger.Println("removing update progress file:", err)
+			logger.Errorf("removing update progress file: %s", err)
 		}
 	}
 
@@ -96,7 +94,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		for t := range inventoryTicker.C {
 			err := agent.publishAgentInventory(deployerConfig.AppConfigs, host, t.Unix(), transientInventory)
 			if err != nil {
-				logger.Println("error publishing agent inventory:", err)
+				logger.Errorf("error publishing agent inventory: %s", err)
 			}
 		}
 	}()
@@ -104,12 +102,12 @@ func runUpdate(cmd *cobra.Command, args []string) {
 	agent.startLogForwarder(deployerConfig, host, func(l config.Log) {
 		json, err := json.Marshal(l)
 		if err != nil {
-			logger.Println(fmt.Sprintf("marshalling log forwarder message: %s", err))
+			logger.Errorf("marshalling log forwarder message: %s", err)
 			return
 		}
 		err = agent.MqttClient.Publish(config.LogForwarderTopic, string(json))
 		if err != nil {
-			logger.Println(fmt.Sprintf("error publishing log forwarding message: %s", err))
+			logger.Errorf("error publishing log forwarding message: %s", err)
 		}
 	})
 
@@ -117,12 +115,12 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		var artifact config.Artifact
 		err := json.Unmarshal([]byte(message), &artifact)
 		if err != nil {
-			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err))
+			logger.Errorf("unmarshalling payload from topic %s: %s", config.RepoPushTopic, err)
 			return
 		}
 
 		if artifact.RepoName == "andrewmarklloyd/pi-app-deployer" && artifact.ManifestName == "pi-app-deployer-agent" {
-			logger.Println("New pi-app-deployer-agent version published, updating now", artifact)
+			logger.Infof("New pi-app-deployer-agent version published, updating now: %s", artifact.Name)
 			updateCondition := status.UpdateCondition{
 				RepoName:     artifact.RepoName,
 				ManifestName: artifact.ManifestName,
@@ -133,19 +131,19 @@ func runUpdate(cmd *cobra.Command, args []string) {
 			err = agent.publishUpdateCondition(updateCondition)
 			if err != nil {
 				// log but don't block update from proceeding
-				logger.Println(err)
+				logger.Errorf("publishing update condition: %s", err)
 			}
 
 			// note the last step of this function is
 			// to restart the systemd unit.
 			err = agent.handleDeployerAgentUpdate(artifact)
 			if err != nil {
-				logger.Println("error updating agent version:", err)
+				logger.Errorf("error updating agent version: %s", err)
 				updateCondition.Error = err.Error()
 				updateCondition.Status = config.StatusErr
 				err = agent.publishUpdateCondition(updateCondition)
 				if err != nil {
-					logger.Println(err)
+					logger.Errorf("publishing update condition: %s", err)
 				}
 				return
 			}
@@ -153,7 +151,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 
 		for _, cfg := range deployerConfig.AppConfigs {
 			if artifact.RepoName == cfg.RepoName && artifact.ManifestName == cfg.ManifestName {
-				logger.Println(fmt.Sprintf("updating repo %s with manifest name %s", cfg.RepoName, cfg.ManifestName))
+				logger.Infof("updating repo %s with manifest name %s", cfg.RepoName, cfg.ManifestName)
 				updateCondition := status.UpdateCondition{
 					RepoName:     cfg.RepoName,
 					ManifestName: cfg.ManifestName,
@@ -164,16 +162,16 @@ func runUpdate(cmd *cobra.Command, args []string) {
 				err = agent.publishUpdateCondition(updateCondition)
 				if err != nil {
 					// log but don't block update from proceeding
-					logger.Println(err)
+					logger.Errorf("publishing update condition: %s", err)
 				}
 				err := agent.handleRepoUpdate(artifact, cfg)
 				if err != nil {
-					logger.Println(err)
+					logger.Errorf("handling repo update: %s", err)
 					updateCondition.Error = err.Error()
 					updateCondition.Status = config.StatusErr
 					err = agent.publishUpdateCondition(updateCondition)
 					if err != nil {
-						logger.Println(err)
+						logger.Errorf("publishing update condition: %s", err)
 					}
 					return
 				}
@@ -181,7 +179,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 				updateCondition.Status = config.StatusSuccess
 				err = agent.publishUpdateCondition(updateCondition)
 				if err != nil {
-					logger.Println(err)
+					logger.Errorf("publishing update condition: %s", err)
 				}
 			}
 		}
@@ -191,12 +189,12 @@ func runUpdate(cmd *cobra.Command, args []string) {
 		var payload config.ServiceActionPayload
 		err := json.Unmarshal([]byte(message), &payload)
 		if err != nil {
-			logger.Println(fmt.Sprintf("unmarshalling payload from topic %s: %s", config.ServiceActionTopic, err))
+			logger.Errorf("unmarshalling payload from topic %s: %s", config.ServiceActionTopic, err)
 			return
 		}
 		for _, cfg := range deployerConfig.AppConfigs {
 			if payload.RepoName == cfg.RepoName && payload.ManifestName == cfg.ManifestName {
-				logger.Println(fmt.Sprintf("Running service action %s on %s/%s", payload.Action, payload.RepoName, payload.ManifestName))
+				logger.Infof("Running service action %s on %s/%s", payload.Action, payload.RepoName, payload.ManifestName)
 				var err error
 				switch payload.Action {
 				case config.ServiceActionStart:
@@ -213,7 +211,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 					break
 				}
 				if err != nil {
-					logger.Println(err)
+					logger.Errorf("running service action: %s", err)
 				}
 			}
 		}

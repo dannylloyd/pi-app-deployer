@@ -10,15 +10,18 @@ import (
 	"strings"
 	"time"
 
+	mqttC "github.com/eclipse/paho.mqtt.golang"
+
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/redis"
+	"go.uber.org/zap"
 
 	gmux "github.com/gorilla/mux"
 )
 
-var logger = log.New(os.Stdout, "[pi-app-deployer-Server] ", log.LstdFlags)
+var logger *zap.SugaredLogger
 var forwarderLogger = log.New(os.Stdout, "[pi-app-deployer-Forwarder] ", log.LstdFlags)
 
 var messageClient mqtt.MqttClient
@@ -27,6 +30,13 @@ var redisClient redis.Redis
 var version string
 
 func main() {
+	l, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalln("Error creating logger:", err)
+	}
+	logger = l.Sugar().Named("pi-app-deployer")
+	defer logger.Sync()
+
 	srvAddr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
 
 	user := os.Getenv("CLOUDMQTT_USER")
@@ -34,29 +44,34 @@ func main() {
 	url := os.Getenv("CLOUDMQTT_URL")
 
 	if user == "" || pw == "" || url == "" {
-		logger.Fatalln("CLOUDMQTT_USER CLOUDMQTT_PASSWORD CLOUDMQTT_URL env vars must be set")
+		logger.Fatal("CLOUDMQTT_USER CLOUDMQTT_PASSWORD CLOUDMQTT_URL env vars must be set")
 	}
 
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, pw, strings.Split(url, "@")[1])
 
-	messageClient = mqtt.NewMQTTClient(mqttAddr, *logger)
-	err := messageClient.Connect()
+	messageClient = mqtt.NewMQTTClient(mqttAddr, func(client mqttC.Client) {
+		logger.Info("Connected to MQTT server")
+	}, func(client mqttC.Client, err error) {
+		logger.Fatalf("Connection to MQTT server lost: %s", err)
+	})
+	err = messageClient.Connect()
 	if err != nil {
-		logger.Fatalln("connecting to mqtt: ", err)
+		logger.Fatalf("connecting to mqtt: %s", err)
 	}
 
 	redisClient, err = redis.NewRedisClient(os.Getenv("REDIS_TLS_URL"))
 	if err != nil {
-		logger.Fatalln("creating redis client:", err)
+		logger.Fatalf("creating redis client: %s", err)
 	}
 
 	messageClient.Subscribe(config.LogForwarderTopic, func(message string) {
 		var log config.Log
 		err := json.Unmarshal([]byte(message), &log)
 		if err != nil {
-			logger.Println(fmt.Sprintf("unmarshalling log forwarder message: %s", err))
+			logger.Errorf("unmarshalling log forwarder message: %s", err)
 		}
 
+		// TODO: use zap logger
 		forwarderLogger.Println(fmt.Sprintf("<%s/%s/%s>: %s", log.Config.RepoName, log.Host, log.Config.ManifestName, log.Message))
 	})
 
@@ -64,18 +79,18 @@ func main() {
 		var c status.UpdateCondition
 		err := json.Unmarshal([]byte(message), &c)
 		if err != nil {
-			logger.Println(fmt.Sprintf("unmarshalling update condition message: %s", err))
+			logger.Errorf("unmarshalling update condition message: %s", err)
 			return
 		}
 		cString := fmt.Sprintf("<%s/%s/%s> deploy condition: %s", c.RepoName, c.ManifestName, c.Host, c.Status)
 		if c.Error != "" {
 			cString += fmt.Sprintf("%s, error: %s", cString, c.Error)
 		}
-		logger.Println(cString)
+		logger.Info(cString)
 
 		err = redisClient.WriteCondition(context.Background(), c)
 		if err != nil {
-			logger.Println(fmt.Sprintf("writing condition message to redis: %s", err))
+			logger.Errorf("writing condition message to redis: %s", err)
 			return
 		}
 	})
@@ -85,7 +100,7 @@ func main() {
 		p := config.AgentInventoryPayload{}
 		unmarshErr := json.Unmarshal([]byte(message), &p)
 		if unmarshErr != nil {
-			logger.Println("unmarshalling agent inventory payload:", unmarshErr)
+			logger.Errorf("unmarshalling agent inventory payload: %s", unmarshErr)
 			return
 		}
 
@@ -95,7 +110,7 @@ func main() {
 		}
 		err = redisClient.WriteAgentInventory(context.Background(), p, expiration)
 		if err != nil {
-			logger.Println(fmt.Sprintf("writing agent inventory to redis: %s", err))
+			logger.Errorf("writing agent inventory to redis: %s", err)
 			return
 		}
 
@@ -107,7 +122,7 @@ func main() {
 				currentTimer.Stop()
 			}
 			timer := time.AfterFunc(config.InventoryTickerTimeout, func() {
-				logger.Println("Agent inventory timeout occurred for host:", p.Host)
+				logger.Errorf("Agent inventory timeout occurred for host: %s", p.Host)
 			})
 			inventoryTimerMap[p.Host] = timer
 		}
@@ -124,14 +139,14 @@ func main() {
 		Addr:    srvAddr,
 	}
 
-	logger.Println("server started on ", srvAddr)
-	logger.Fatal(srv.ListenAndServe())
+	logger.Infof("server started on %s", srvAddr)
+	logger.Fatalf("error running web server: %s", srv.ListenAndServe())
 }
 
 func requireLogin(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, req *http.Request) {
 		if !isAuthenticated(req) {
-			logger.Println(fmt.Sprintf("Unauthenticated request, host: %s, headers: %s", req.Host, req.Header))
+			logger.Warnf("Unauthenticated request, host: %s, headers: %s", req.Host, req.Header)
 			http.Error(w, `{"status":"error","error":"unauthenticated"}`, http.StatusUnauthorized)
 			return
 		}

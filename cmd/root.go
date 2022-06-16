@@ -2,14 +2,13 @@ package cmd
 
 import (
 	"log"
-	"os"
 	"os/user"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
-var logger = log.New(os.Stdout, "[pi-app-deployer-Agent] ", log.LstdFlags)
-
+var logger *zap.SugaredLogger
 var rootCmd = &cobra.Command{
 	Use:   "pi-app-deployer-agent",
 	Short: "",
@@ -23,15 +22,22 @@ func Execute() {
 }
 
 func init() {
+	l, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalln("Error creating logger:", err)
+	}
+	logger = l.Sugar().Named("pi-app-deployer-agent")
+	defer logger.Sync()
+
 	u, err := user.Current()
 	if err != nil {
-		logger.Fatalln("error getting current user:", err)
+		logger.Fatalf("error getting current user: %s", err)
 	}
 	if u.Username != "root" {
-		logger.Fatalln("agent must be run as root, user found was", u.Username)
+		logger.Fatalf("agent must be run as root, user found was %s", u.Username)
 	}
 
-	logger.Println("Version:", version)
+	logger.Infof("Version: %s", version)
 
 	rootCmd.PersistentFlags().String("herokuApp", "", "Name of the Heroku app")
 }

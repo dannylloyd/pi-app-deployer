@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
@@ -40,33 +39,33 @@ func runInstall(cmd *cobra.Command, args []string) {
 	cfg := getConfig(cmd)
 	herokuAPIKey := os.Getenv("HEROKU_API_KEY")
 	if herokuAPIKey == "" {
-		logger.Fatalln("HEROKU_API_TOKEN environment variable is required")
+		logger.Fatal("HEROKU_API_TOKEN environment variable is required")
 	}
 
 	herokuApp, err := cmd.Flags().GetString("herokuApp")
 	if err != nil {
-		logger.Fatalln("error getting herokuApp flag", err)
+		logger.Fatalf("error getting herokuApp flag: %s", err)
 	}
 	if herokuApp == "" {
-		logger.Fatalln("herokuApp flag is required")
+		logger.Fatal("herokuApp flag is required")
 	}
 
 	agent, err := newAgent(herokuAPIKey, herokuApp)
 	if err != nil {
-		logger.Fatalln(fmt.Errorf("error creating agent: %s", err))
+		logger.Fatalf("error creating agent: %s", err)
 	}
 
 	deployerConfig, err := config.NewDeployerConfig(config.DeployerConfigFile, herokuApp)
 	if err != nil {
-		logger.Fatalln("error getting deployer config:", err)
+		logger.Fatalf("error getting deployer config: %s", err)
 	}
 
 	// TODO: support updating a config?
 	if deployerConfig.ConfigExists(cfg) {
-		logger.Fatalln("App already exists in app configs file", config.DeployerConfigFile)
+		logger.Fatalf("App already exists in app configs file %s", config.DeployerConfigFile)
 	}
 
-	logger.Println("Installing application")
+	logger.Info("Installing application")
 	// writing deployer config here is required since the install
 	// starts the pi-app-deployer-agent systemd unit
 	deployerConfig.SetAppConfig(cfg)
@@ -78,7 +77,7 @@ func runInstall(cmd *cobra.Command, args []string) {
 	}
 	cfg, err = agent.handleInstall(a, cfg)
 	if err != nil {
-		logger.Fatalln(fmt.Errorf("failed installation: %s", err))
+		logger.Fatalf("failed installation: %s", err)
 	}
 
 	// writing deployer config here is required to
@@ -87,24 +86,24 @@ func runInstall(cmd *cobra.Command, args []string) {
 	deployerConfig.SetAppConfig(cfg)
 	deployerConfig.WriteDeployerConfig()
 
-	logger.Println("Successfully installed app")
+	logger.Info("Successfully installed app")
 }
 
 func getConfig(cmd *cobra.Command) config.Config {
 	repoName, err := cmd.Flags().GetString("repoName")
 	if err != nil {
-		logger.Fatalln("error getting repoName flag", err)
+		logger.Fatalf("error getting repoName flag: %s", err)
 	}
 	if repoName == "" {
-		logger.Fatalln("repoName flag is required")
+		logger.Fatal("repoName flag is required")
 	}
 
 	manifestName, err := cmd.Flags().GetString("manifestName")
 	if err != nil {
-		logger.Fatalln("error getting manifestName flag", err)
+		logger.Fatalf("error getting manifestName flag: %s", err)
 	}
 	if manifestName == "" {
-		logger.Fatalln("manifestName flag is required")
+		logger.Fatal("manifestName flag is required")
 	}
 
 	appUser, err := cmd.Flags().GetString("appUser")

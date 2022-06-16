@@ -14,7 +14,7 @@ import (
 func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logger.Println("error reading request body:", err)
+		logger.Errorf("reading request body: %s", err)
 		handleError(w, "error reading request body", http.StatusInternalServerError)
 		return
 	}
@@ -23,35 +23,37 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 	var a config.Artifact
 	err = json.Unmarshal(data, &a)
 	if err != nil {
+		logger.Errorf("unmarshalling artifact: %s", err)
 		handleError(w, "Error parsing request", http.StatusInternalServerError)
 		return
 	}
 
 	if err := a.Validate(); err != nil {
 		errs := fmt.Sprintf("error validating artifact: %s", err.Error())
-		logger.Println(errs)
+		logger.Error(errs)
 		handleError(w, errs, http.StatusBadRequest)
 		return
 	}
 
-	logger.Println(fmt.Sprintf("Received new artifact published event for repository %s, manifest %s, SHA %s", a.RepoName, a.ManifestName, a.SHA))
+	logger.Infof("Received new artifact published event for repository %s, manifest %s, SHA %s", a.RepoName, a.ManifestName, a.SHA)
 
 	j, err := json.Marshal(a)
 	if err != nil {
-		logger.Println(err)
+		logger.Errorf("marshalling artifact: %s", err)
 		handleError(w, "error occurred marshalling json", http.StatusInternalServerError)
 		return
 	}
 
 	err = redisClient.DeleteConditions(r.Context(), a.RepoName, a.ManifestName)
 	if err != nil {
+		logger.Errorf("deleting conditions from redis: %s", err)
 		handleError(w, "Error clearing previous deploy status", http.StatusBadRequest)
 		return
 	}
 
 	err = messageClient.Publish(config.RepoPushTopic, string(j))
 	if err != nil {
-		logger.Println(err)
+		logger.Errorf("publishing to repo push topic: %s", err)
 		handleError(w, "Error publishing event", http.StatusInternalServerError)
 		return
 	}
@@ -62,7 +64,7 @@ func handleRepoPush(w http.ResponseWriter, r *http.Request) {
 func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logger.Println("error reading request body:", err)
+		logger.Errorf("reading request body: %s", err)
 		handleError(w, "error reading request body", http.StatusInternalServerError)
 		return
 	}
@@ -71,13 +73,14 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 	var p config.DeployStatusPayload
 	err = json.Unmarshal(data, &p)
 	if err != nil {
+		logger.Errorf("unmarshalling deploy status payload: %s", err)
 		handleError(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
 
 	if err = p.Validate(); err != nil {
 		errs := fmt.Sprintf("error validating payload: %s", err.Error())
-		logger.Println(errs)
+		logger.Error(errs)
 		handleError(w, errs, http.StatusBadRequest)
 		return
 	}
@@ -85,7 +88,7 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 	conditions, err := redisClient.ReadConditions(r.Context(), p.RepoName, p.ManifestName)
 
 	if err != nil {
-		logger.Println(fmt.Sprintf("Error getting deploy status from redis: %s. RepoName: %s, ManifestName: %s", err, p.RepoName, p.ManifestName))
+		logger.Errorf("getting deploy status from redis: %s. RepoName: %s, ManifestName: %s", err, p.RepoName, p.ManifestName)
 		if err.Error() == "redis: nil" {
 			handleError(w, fmt.Sprintf("Could not find deploy status for RepoName: %s, ManifestName: %s", p.RepoName, p.ManifestName), http.StatusBadRequest)
 			return
@@ -96,12 +99,13 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 
 	agents, err := redisClient.ReadAgentInventory(r.Context(), p.RepoName, p.ManifestName)
 	if err != nil {
+		logger.Errorf("reading agent inventory: %s", err)
 		handleError(w, "error listing agents configured to update app", http.StatusBadRequest)
 		return
 	}
 
 	if len(agents) == 0 {
-		logger.Println("length of agents is 0 indicating a request for deploy status occurred but no hosts are configured for this app")
+		logger.Error("length of agents is 0 indicating a request for deploy status occurred but no hosts are configured for this app")
 		handleError(w, "no agents are configured for this app", http.StatusBadRequest)
 		return
 	}
@@ -140,12 +144,14 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 
 	successJson, err := json.Marshal(successfulHosts)
 	if err != nil {
+		logger.Errorf("marshalling successful hosts: %s", err)
 		handleError(w, "Error marshalling successful hosts", http.StatusBadRequest)
 		return
 	}
 
 	unsuccessJson, err := json.Marshal(unsuccessfulHosts)
 	if err != nil {
+		logger.Errorf("marshalling unsuccessful hosts: %s", err)
 		handleError(w, "Error marshalling unsuccessful hosts", http.StatusBadRequest)
 		return
 	}
@@ -156,7 +162,7 @@ func handleDeployStatus(w http.ResponseWriter, r *http.Request) {
 func handleServicePost(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logger.Println("error reading request body:", err)
+		logger.Errorf("error reading request body: %s", err)
 		handleError(w, "error reading request body", http.StatusInternalServerError)
 		return
 	}
@@ -171,21 +177,21 @@ func handleServicePost(w http.ResponseWriter, r *http.Request) {
 
 	if payload.Validate() != nil {
 		err := fmt.Sprintf("error validating payload: %s", payload.Validate().Error())
-		logger.Println(err)
+		logger.Error(err)
 		handleError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	json, err := json.Marshal(payload)
 	if err != nil {
-		logger.Println(err)
+		logger.Errorf("marshalling payload: %s", err)
 		handleError(w, "error occurred marshalling json", http.StatusInternalServerError)
 		return
 	}
 
 	err = messageClient.Publish(config.ServiceActionTopic, string(json))
 	if err != nil {
-		logger.Println(err)
+		logger.Errorf("publishing to service action topic: %s", err)
 		handleError(w, "Error publishing event", http.StatusInternalServerError)
 		return
 	}

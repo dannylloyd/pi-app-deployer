@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	mqttC "github.com/eclipse/paho.mqtt.golang"
+
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/manifest"
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
@@ -57,12 +59,17 @@ func newAgent(herokuAPIKey, herokuApp string) (Agent, error) {
 	}
 	urlSplit := strings.Split(mqttURL, "@")
 	if len(urlSplit) != 2 {
-		logger.Fatalln("unexpected CLOUDMQTT_URL parsing error")
+		logger.Fatal("unexpected CLOUDMQTT_URL parsing error")
 	}
 	domain := urlSplit[1]
 
 	mqttAddr := fmt.Sprintf("mqtt://%s:%s@%s", user, password, domain)
-	client := mqtt.NewMQTTClient(mqttAddr, *logger)
+
+	client := mqtt.NewMQTTClient(mqttAddr, func(client mqttC.Client) {
+		logger.Info("Connected to MQTT server")
+	}, func(client mqttC.Client, err error) {
+		logger.Fatalf("Connection to MQTT server lost: %s", err)
+	})
 
 	return Agent{
 		MqttClient:   client,
@@ -74,7 +81,7 @@ func newAgent(herokuAPIKey, herokuApp string) (Agent, error) {
 }
 
 func (a *Agent) handleRepoUpdate(artifact config.Artifact, cfg config.Config) error {
-	logger.Println(fmt.Sprintf("updating manifest %s for repository %s", artifact.ManifestName, artifact.RepoName))
+	logger.Infof("updating manifest %s for repository %s", artifact.ManifestName, artifact.RepoName)
 
 	url, err := github.GetDownloadURLWithRetries(artifact, false)
 	if err != nil {
@@ -145,7 +152,7 @@ func (a *Agent) handleDeployerAgentUpdate(artifact config.Artifact) error {
 
 	// this restarts the currently running process. no code
 	// will execute after this is run.
-	logger.Println("Restarting systemd unit now")
+	logger.Info("Restarting systemd unit now")
 	err = file.RestartSystemdUnit("pi-app-deployer-agent")
 	if err != nil {
 		return fmt.Errorf("restarting pi-app-deployer-agent systemd unit: %s", err)

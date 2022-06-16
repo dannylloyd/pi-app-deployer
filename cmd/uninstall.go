@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
@@ -29,51 +28,51 @@ func init() {
 func runUninstall(cmd *cobra.Command, args []string) {
 	all, err := cmd.Flags().GetBool("all")
 	if err != nil {
-		logger.Fatalln("error getting all flag", err)
+		logger.Fatalf("error getting all flag: %s", err)
 	}
 
 	repoName, err := cmd.Flags().GetString("repoName")
 	if err != nil {
-		logger.Fatalln("error getting repoName flag", err)
+		logger.Fatalf("error getting repoName flag: %s", err)
 	}
 
 	manifestName, err := cmd.Flags().GetString("manifestName")
 	if err != nil {
-		logger.Fatalln("error getting manifestName flag", err)
+		logger.Fatalf("error getting manifestName flag: %s", err)
 	}
 
 	herokuApp, err := cmd.Flags().GetString("herokuApp")
 	if err != nil {
-		logger.Fatalln("error getting herokuApp flag", err)
+		logger.Fatalf("error getting herokuApp flag: %s", err)
 	}
 
 	if herokuApp == "" {
-		logger.Fatalln("herokuApp flag cannot be empty")
+		logger.Fatal("herokuApp flag cannot be empty")
 	}
 
 	deployerConfig, err := config.NewDeployerConfig(config.DeployerConfigFile, herokuApp)
 	if err != nil {
-		logger.Fatalln("error getting deployer config:", err)
+		logger.Fatalf("error getting deployer config: %s", err)
 	}
 
 	if all {
-		logger.Println("Uninstalling all apps")
+		logger.Info("Uninstalling all apps")
 		err := unInstallAll(deployerConfig.AppConfigs)
 		if err != nil {
-			logger.Fatalln("Error uninstalling all apps:", err)
+			logger.Fatalf("Error uninstalling all apps: %s", err)
 		}
-		logger.Println("Successfully uninstalled all apps")
+		logger.Info("Successfully uninstalled all apps")
 		os.Exit(0)
 	}
 
 	if repoName == "" || manifestName == "" {
-		logger.Fatalln("repoName and manifestName cannot be empty if not using the --all flag")
+		logger.Fatal("repoName and manifestName cannot be empty if not using the --all flag")
 	}
 
-	logger.Println(fmt.Sprintf("Uninstalling %s/%s", repoName, manifestName))
+	logger.Infof("Uninstalling %s/%s", repoName, manifestName)
 	err = unInstall(deployerConfig.AppConfigs, repoName, manifestName)
 	if err != nil {
-		logger.Fatalln(fmt.Sprintf("Error uninstalling %s/%s: %s", repoName, manifestName, err))
+		logger.Fatalf("Error uninstalling %s/%s: %s", repoName, manifestName, err)
 	}
-	logger.Println(fmt.Sprintf("Successfully uninstalled %s/%s", repoName, manifestName))
+	logger.Infof("Successfully uninstalled %s/%s", repoName, manifestName)
 }
