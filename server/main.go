@@ -84,7 +84,7 @@ func main() {
 		var zLog zapLog
 		if err := json.Unmarshal([]byte(log.Message), &zLog); err != nil {
 			logger.Errorf("unmarshalling log forwarded message into zap log message: %s, raw message json: %s", err, log.Message)
-			forwarderLogger.Infof(log.Message,
+			forwarderLogger.Infow(log.Message,
 				"agentLogger", "pi-app-deployer-agent",
 				"repoName", log.Config.RepoName,
 				"host", log.Host,
@@ -200,17 +200,17 @@ func isAuthenticated(req *http.Request) bool {
 func getLogFunction(z zapLog) func(msg string, keysAndValues ...interface{}) {
 	switch z.Level {
 	case "debug":
-		return forwarderLogger.Debugf
+		return forwarderLogger.Debugw
 	case "info":
-		return forwarderLogger.Infof
+		return forwarderLogger.Infow
 	case "warn":
-		return forwarderLogger.Warnf
+		return forwarderLogger.Warnw
 	case "error":
-		return forwarderLogger.Errorf
+		return forwarderLogger.Errorw
 	case "panic":
-		return forwarderLogger.Panicf
+		return forwarderLogger.Panicw
 	case "fatal":
-		return forwarderLogger.Fatalf
+		return forwarderLogger.Fatalw
 	}
-	return forwarderLogger.Infof
+	return forwarderLogger.Infow
 }
