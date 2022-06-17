@@ -21,8 +21,14 @@ import (
 	gmux "github.com/gorilla/mux"
 )
 
+type zapLog struct {
+	Level  string `json:"level"`
+	Logger string `json:"logger"`
+	Msg    string `json:"msg"`
+}
+
 var logger *zap.SugaredLogger
-var forwarderLogger = log.New(os.Stdout, "[pi-app-deployer-Forwarder] ", log.LstdFlags)
+var forwarderLogger *zap.SugaredLogger
 
 var messageClient mqtt.MqttClient
 var redisClient redis.Redis
@@ -36,6 +42,9 @@ func main() {
 	}
 	logger = l.Sugar().Named("pi-app-deployer")
 	defer logger.Sync()
+
+	forwarderLogger = l.Sugar().Named("pi-app-deployer-forwarder")
+	defer forwarderLogger.Sync()
 
 	srvAddr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
 
@@ -69,10 +78,29 @@ func main() {
 		err := json.Unmarshal([]byte(message), &log)
 		if err != nil {
 			logger.Errorf("unmarshalling log forwarder message: %s", err)
+			return
 		}
 
-		// TODO: use zap logger
-		forwarderLogger.Println(fmt.Sprintf("<%s/%s/%s>: %s", log.Config.RepoName, log.Host, log.Config.ManifestName, log.Message))
+		var zLog zapLog
+		if err := json.Unmarshal([]byte(log.Message), &zLog); err != nil {
+			logger.Errorf("unmarshalling log forwarded message into zap log message: %s, raw message json: %s", err, log.Message)
+			forwarderLogger.Infof(log.Message,
+				"agentLogger", "pi-app-deployer-agent",
+				"repoName", log.Config.RepoName,
+				"host", log.Host,
+				"manifestName", log.Config.ManifestName,
+			)
+			return
+		}
+
+		leveledLogFunction := getLogFunction(zLog)
+
+		leveledLogFunction(zLog.Msg,
+			"agentLogger", zLog.Logger,
+			"repoName", log.Config.RepoName,
+			"host", log.Host,
+			"manifestName", log.Config.ManifestName,
+		)
 	})
 
 	messageClient.Subscribe(config.RepoPushStatusTopic, func(message string) {
@@ -165,4 +193,24 @@ func isAuthenticated(req *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+// TODO: is it possible to use zap to dynamically
+// determine which log level function to use?
+func getLogFunction(z zapLog) func(msg string, keysAndValues ...interface{}) {
+	switch z.Level {
+	case "debug":
+		return forwarderLogger.Debugf
+	case "info":
+		return forwarderLogger.Infof
+	case "warn":
+		return forwarderLogger.Warnf
+	case "error":
+		return forwarderLogger.Errorf
+	case "panic":
+		return forwarderLogger.Panicf
+	case "fatal":
+		return forwarderLogger.Fatalf
+	}
+	return forwarderLogger.Infof
 }
