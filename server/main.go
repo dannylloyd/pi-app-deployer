@@ -107,14 +107,16 @@ func main() {
 		var c status.UpdateCondition
 		err := json.Unmarshal([]byte(message), &c)
 		if err != nil {
-			logger.Errorf("unmarshalling update condition message: %s", err)
+			logger.Errorf("unmarshalling update condition message: %s, raw message string: %s", err, message)
 			return
 		}
-		cString := fmt.Sprintf("<%s/%s/%s> deploy condition: %s", c.RepoName, c.ManifestName, c.Host, c.Status)
-		if c.Error != "" {
-			cString += fmt.Sprintf("%s, error: %s", cString, c.Error)
-		}
-		logger.Info(cString)
+
+		logger.Infow("repo push status received",
+			"condition", c.Status,
+			"repoName", c.RepoName,
+			"manifestName", c.ManifestName,
+			"host", c.Host,
+			"error", c.Error)
 
 		err = redisClient.WriteCondition(context.Background(), c)
 		if err != nil {
