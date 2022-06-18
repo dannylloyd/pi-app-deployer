@@ -11,21 +11,17 @@ import (
 	"time"
 
 	mqttC "github.com/eclipse/paho.mqtt.golang"
+	"gopkg.in/yaml.v2"
 
 	"github.com/andrewmarklloyd/pi-app-deployer/api/v1/status"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
+	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/logging"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/mqtt"
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/redis"
 	"go.uber.org/zap"
 
 	gmux "github.com/gorilla/mux"
 )
-
-type zapLog struct {
-	Level  string `json:"level"`
-	Logger string `json:"logger"`
-	Msg    string `json:"msg"`
-}
 
 var logger *zap.SugaredLogger
 var forwarderLogger *zap.SugaredLogger
@@ -73,6 +69,13 @@ func main() {
 		logger.Fatalf("creating redis client: %s", err)
 	}
 
+	fConfig := os.Getenv("FORWARDER_CONFIG")
+	var logCM logging.ConfigMap
+	err = yaml.Unmarshal([]byte(fConfig), &logCM)
+	if err != nil {
+		logger.Fatalf("unmarshalling log forwarder config %s", err)
+	}
+
 	messageClient.Subscribe(config.LogForwarderTopic, func(message string) {
 		var log config.Log
 		err := json.Unmarshal([]byte(message), &log)
@@ -81,26 +84,22 @@ func main() {
 			return
 		}
 
-		var zLog zapLog
-		if err := json.Unmarshal([]byte(log.Message), &zLog); err != nil {
-			logger.Errorf("unmarshalling log forwarded message into zap log message: %s, raw message json: %s", err, log.Message)
-			forwarderLogger.Infow(log.Message,
-				"agentLogger", "pi-app-deployer-agent",
+		c, ok := logCM[log.Config.RepoName]
+		if !ok {
+			logger.Errorw("Received forwarded log but no forwarder config exists. Unable to send logs to app endpoint",
 				"repoName", log.Config.RepoName,
-				"host", log.Host,
 				"manifestName", log.Config.ManifestName,
 			)
 			return
 		}
 
-		leveledLogFunction := getLogFunction(zLog)
+		if err = logging.SendLogs(c, log); err != nil {
+			logger.Errorw(fmt.Sprintf("forwarding app logs: %s", err),
+				"repoName", log.Config.RepoName,
+				"manifestName", log.Config.ManifestName,
+			)
+		}
 
-		leveledLogFunction(zLog.Msg,
-			"agentLogger", zLog.Logger,
-			"repoName", log.Config.RepoName,
-			"host", log.Host,
-			"manifestName", log.Config.ManifestName,
-		)
 	})
 
 	messageClient.Subscribe(config.RepoPushStatusTopic, func(message string) {
@@ -195,24 +194,4 @@ func isAuthenticated(req *http.Request) bool {
 		return false
 	}
 	return true
-}
-
-// TODO: is it possible to use zap to dynamically
-// determine which log level function to use?
-func getLogFunction(z zapLog) func(msg string, keysAndValues ...interface{}) {
-	switch z.Level {
-	case "debug":
-		return forwarderLogger.Debugw
-	case "info":
-		return forwarderLogger.Infow
-	case "warn":
-		return forwarderLogger.Warnw
-	case "error":
-		return forwarderLogger.Errorw
-	case "panic":
-		return forwarderLogger.Panicw
-	case "fatal":
-		return forwarderLogger.Fatalw
-	}
-	return forwarderLogger.Infow
 }

@@ -44,7 +44,6 @@ ${deployerDir}/pi-app-deployer-agent install \
     --repoName andrewmarklloyd/pi-test \
     --manifestName pi-test-amd64 \
     --envVar MY_CONFIG=testing \
-    --logForwarding \
     --herokuApp ${DEPLOYER_APP}
 
 sed "s/{{.HerokuApp}}/${DEPLOYER_APP}/g" test/test-int-appconfigs.yaml > /tmp/test.yaml
