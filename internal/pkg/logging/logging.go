@@ -16,11 +16,7 @@ type response struct {
 }
 
 func SendLogs(c LogForwardConfig, log config.Log) error {
-	j, err := json.Marshal(log)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest("POST", c.Endpoint, bytes.NewBuffer(j))
+	req, err := http.NewRequest("POST", c.Endpoint, bytes.NewBuffer([]byte(log.Message)))
 
 	if err != nil {
 		return err
