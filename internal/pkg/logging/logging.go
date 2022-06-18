@@ -11,6 +11,10 @@ import (
 	"github.com/andrewmarklloyd/pi-app-deployer/internal/pkg/config"
 )
 
+type response struct {
+	Error string `json:"error"`
+}
+
 func SendLogs(c LogForwardConfig, log config.Log) error {
 	j, err := json.Marshal(log)
 	if err != nil {
@@ -35,11 +39,15 @@ func SendLogs(c LogForwardConfig, log config.Log) error {
 	}
 	defer resp.Body.Close()
 
-	fmt.Println(string(body))
-	// err = json.Unmarshal(body, &apiRes)
-	// if err != nil {
-	// 	return err
-	// }
+	var res response
+	err = json.Unmarshal(body, &res)
+	if err != nil {
+		return err
+	}
+
+	if res.Error != "" {
+		return fmt.Errorf(res.Error)
+	}
 
 	return nil
 }
