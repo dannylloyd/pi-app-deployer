@@ -1,13 +1,20 @@
 package file
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 const (
 	systemDPath = "/etc/systemd/system"
 )
+
+type syslog struct {
+	Identifier string `json:"SYSLOG_IDENTIFIER"`
+	Message    string `json:"MESSAGE"`
+}
 
 func SetupSystemdUnits(unitName string) error {
 	output, err := runSystemctlCommand("daemon-reload")
@@ -101,7 +108,7 @@ func runSystemctlCommand(args ...string) (string, error) {
 }
 
 func TailSystemdLogs(systemdUnit string, ch chan string) error {
-	cmd := exec.Command("journalctl", "-u", systemdUnit, "-f", "-n 0", "--output", "cat")
+	cmd := exec.Command("journalctl", "-u", systemdUnit, "-f", "-n 0", "--output", "json")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -118,7 +125,15 @@ func TailSystemdLogs(systemdUnit string, ch chan string) error {
 			break
 		}
 
-		ch <- string(buf[0:n])
+		var s syslog
+		err = json.Unmarshal(buf[0:n], &s)
+		if err != nil {
+			break
+		}
+
+		if s.Message != "" && s.Identifier != "systemd" && !strings.Contains(s.Message, "Logs begin at") {
+			ch <- string(s.Message)
+		}
 	}
 	close(ch)
 	if err := cmd.Wait(); err != nil {
