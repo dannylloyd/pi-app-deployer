@@ -370,7 +370,7 @@ func (a *Agent) startLogForwarder(deplerConfig config.DeployerConfig, host strin
 				for logs := range ch {
 					logLines := strings.Split(strings.Replace(logs, "\n", `\n`, -1), `\n`)
 					for _, line := range logLines {
-						if line != "" && !strings.Contains(line, "Logs begin at") {
+						if line != "" && !strings.Contains(line, "Logs begin at") && !strings.Contains(line, "systemd[1]") {
 							l := config.Log{
 								Message: line,
 								Config:  n,
