@@ -1,6 +1,7 @@
 package file
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -11,9 +12,10 @@ const (
 	systemDPath = "/etc/systemd/system"
 )
 
-type syslog struct {
+type Syslog struct {
 	Identifier string `json:"SYSLOG_IDENTIFIER"`
 	Message    string `json:"MESSAGE"`
+	Error      error
 }
 
 func SetupSystemdUnits(unitName string) error {
@@ -107,37 +109,36 @@ func runSystemctlCommand(args ...string) (string, error) {
 	return string(output), nil
 }
 
-func TailSystemdLogs(systemdUnit string, ch chan string) error {
+func TailSystemdLogs(systemdUnit string, ch chan Syslog) error {
 	cmd := exec.Command("journalctl", "-u", systemdUnit, "-f", "-n 0", "--output", "json")
-	stdout, err := cmd.StdoutPipe()
+	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
-		return err
+		return fmt.Errorf("creating command stdout pipe: %s", err)
 	}
+
+	scanner := bufio.NewScanner(cmdReader)
+	go func() {
+		for scanner.Scan() {
+			var s Syslog
+			if err := json.Unmarshal([]byte(scanner.Text()), &s); err != nil {
+				s.Error = fmt.Errorf("unmarshalling log: %s, original log text: %s", err, scanner.Text())
+				ch <- s
+				break
+			}
+			if s.Message != "" && s.Identifier != "systemd" && !strings.Contains(s.Message, "Logs begin at") {
+				ch <- s
+			}
+		}
+	}()
 
 	if err := cmd.Start(); err != nil {
-		return err
+		return fmt.Errorf("starting command: %s", err)
 	}
 
-	buf := make([]byte, 1024)
-	for {
-		n, err := stdout.Read(buf)
-		if err != nil {
-			break
-		}
-
-		var s syslog
-		err = json.Unmarshal(buf[0:n], &s)
-		if err != nil {
-			break
-		}
-
-		if s.Message != "" && s.Identifier != "systemd" && !strings.Contains(s.Message, "Logs begin at") {
-			ch <- string(s.Message)
-		}
-	}
-	close(ch)
 	if err := cmd.Wait(); err != nil {
-		return err
+		close(ch)
+		return fmt.Errorf("waiting for command: %s", err)
 	}
+
 	return nil
 }
