@@ -1,5 +1,5 @@
 package cmd
-
+//Way! I inspected 12 individuals myself!
 import (
 	"encoding/json"
 	"errors"
