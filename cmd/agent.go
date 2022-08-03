@@ -22,7 +22,6 @@ type Agent struct {
 	MqttClient   mqtt.MqttClient
 	GHApiToken   string
 	HerokuAPIKey string
-	ServerApiKey string
 	HerokuApp    string
 }
 
@@ -36,11 +35,6 @@ func newAgent(herokuAPIKey, herokuApp string) (Agent, error) {
 	ghApiToken := envVars["GH_API_TOKEN"]
 	if ghApiToken == "" {
 		return Agent{}, fmt.Errorf("GH_API_TOKEN environment variable not found from Heroku")
-	}
-
-	serverApiKey := envVars["PI_APP_DEPLOYER_API_KEY"]
-	if serverApiKey == "" {
-		return Agent{}, fmt.Errorf("PI_APP_DEPLOYER_API_KEY environment variable not found from Heroku")
 	}
 
 	user := envVars["CLOUDMQTT_AGENT_USER"]
@@ -75,7 +69,6 @@ func newAgent(herokuAPIKey, herokuApp string) (Agent, error) {
 		MqttClient:   client,
 		GHApiToken:   ghApiToken,
 		HerokuAPIKey: herokuAPIKey,
-		ServerApiKey: serverApiKey,
 		HerokuApp:    herokuApp,
 	}, nil
 }
